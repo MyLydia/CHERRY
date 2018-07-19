@@ -2,6 +2,7 @@
 #define	__MIAN_H_
 
 #include <stdio.h>
+#include <assert.h>
 
 typedef int INT32;
 
