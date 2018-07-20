@@ -1,21 +1,29 @@
 #include "main.h"
 
-CHAR *strcpy(CHAR *str,const CHAR* dst)
+CHAR *strncpy(CHAR *str,CHAR* dst,INT32 n)
 {
-	CHAR *tmp = str;
 	assert((str != NULL) && (dst != NULL));
+	INT32 i;
+	CHAR *tmp = str;
 	
-	while((*tmp++ = *dst++) != '\0')
-		;	
-
+	for(i = 0 ; i < n; i++)
+	{
+		if(*dst == '\0')
+			return str;
+		else
+			*tmp++ = *dst++;
+	}
 	return str;
 }
 
-INT32 main(INT32 argc,CHAR* argv[])
+INT32 main(void)
 {
 	CHAR a[20] = {0};
-	CHAR b[] = "world";
-	printf("%s\n",strcpy(a,b));
+	CHAR b[20] = "hello world";
+
+	printf("%s\n",strncpy(a,b,17));
 
 	return 0;
- }
+}
+
+
