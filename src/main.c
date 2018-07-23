@@ -1,33 +1,33 @@
 #include "main.h"
 
-CHAR *strncpy(CHAR *str,CHAR* dst,INT32 n)
+INT32 strcmp(const CHAR *str,const CHAR* dst)
 {
-	assert((str != NULL) && (dst != NULL));
-	CHAR *tmp = str;
-	
-	while(n && (*tmp ++ = *dst ++) != '\0')
+	int ret = 0;
+
+	while(!(ret = *(unsigned char *)str - *(unsigned char *)dst) && *str)
 	{
-		n--;
+		str++;
+		dst++;
+
+		printf("str = %c\n",*str);
+		printf("dst = %c\n",*dst);
+
 	}
 
-	printf("n = %d\n",n);
+	if(ret < 0)
+		return -1;
+	else if(ret > 0)
+		return 1;
 
-	if(n)
-	{
-		while(--n)
-			*str = '\0';	
-	}
-
-	return str;
+	return 0;
 }
 
 INT32 main(void)
 {
-	CHAR a[20] = {0};
-	CHAR b[20] = "hello world";
-
-	printf("%s\n",strncpy(a,b,5));
-	return 0;
+	CHAR a[20] = "hello";
+	CHAR b[20] = "hello";
+	
+	printf("%d\n",strcmp(a,b));
 }
 
 

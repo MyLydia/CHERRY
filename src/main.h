@@ -6,7 +6,7 @@
 
 typedef int INT32;
 
-#define CHAR char
+typedef char CHAR;
 
 
 #endif
