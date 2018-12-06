@@ -20,5 +20,5 @@ typedef char CHAR;
                       }\
                       else {}
 
-
+#define GOS_NELEM(array)   (sizeof(array)/sizeof(array[0]))
 #endif
