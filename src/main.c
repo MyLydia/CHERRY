@@ -24,10 +24,19 @@ INT32 strcmp(const CHAR *str,const CHAR* dst)
 
 INT32 main(void)
 {
-	CHAR a[20] = "hello";
-	CHAR b[20] = "hello";
-	
-	printf("%d\n",strcmp(a,b));
+	char buf[1024]={0};
+    int fd[2];
+    int backfd;
+    pipe(fd);
+    backfd=dup(STDOUT_FILENO);
+    dup2(fd[1],STDOUT_FILENO);
+    system("date");
+    
+    read(fd[0],buf,1024);
+ 
+    dup2(backfd,STDOUT_FILENO);
+    printf("this is a test :%s",buf);
+
 }
 
 
