@@ -1,0 +1,266 @@
+From 64470181173db25429d4241e79379ed147e98b83 Mon Sep 17 00:00:00 2001
+From: chenyuan <chenyuan@thinkcom.com.cn>
+Date: Tue, 19 Feb 2019 12:17:52 +0800
+Subject: [PATCH] =?UTF-8?q?=E7=BD=91=E9=A1=B5=E5=A2=9E=E5=8A=A0loopdetect?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ user/boa/src/LINUX/form_src/Makefile       |  2 +-
+ user/boa/src/LINUX/form_src/boamain.c      |  1 +
+ user/boa/src/LINUX/form_src/fmget.c        | 14 +++++++
+ user/boa/src/LINUX/form_src/fmloopdetect.c | 44 ++++++++++++++++++++++
+ user/boa/src/LINUX/form_src/webform.h      |  1 +
+ user/boa/src/LINUX/mib.h                   |  2 +
+ user/boa/src/LINUX/mibtbl.c                |  1 +
+ user/boa/src/web_general/adminMenu_base.js |  5 +++
+ user/boa/src/web_general/loopdetect.asp    | 40 ++++++++++++++++++++
+ user/xmlconfig/includes/mib.h              |  3 ++
+ user/xmlconfig/xml_data_mib_table.c        |  1 +
+ 11 files changed, 113 insertions(+), 1 deletion(-)
+ create mode 100755 user/boa/src/LINUX/form_src/fmloopdetect.c
+ create mode 100755 user/boa/src/web_general/loopdetect.asp
+
+diff --git a/user/boa/src/LINUX/form_src/Makefile b/user/boa/src/LINUX/form_src/Makefile
+index 4b0604750..4ef90b559 100755
+--- a/user/boa/src/LINUX/form_src/Makefile
++++ b/user/boa/src/LINUX/form_src/Makefile
+@@ -34,7 +34,7 @@ DEPEND_FILES = fmget.o fmtcpip.o fmfwall.o fmmgmt.o \
+ 		  fmwan.o fmbridge.o fmroute.o \
+ 		  fmcapture.o \
+ 		  fmping.o fmtracert.o fmreboot.o fmmultilang.o \
+-		  fmigmproxy.o \
++		  fmigmproxy.o fmloopdetect.o\
+ 		  fmothers.o fmstatus.o fmupnp.o fmdiagtest.o\
+ 		  fmeth2pvc_vlan.o fmacc.o fmacl.o fmdomainblk.o fmurl.o \
+ 		  boamain.o fmiptv.o fmlink.o fmalgonoff.o fmaddressmap.o multilang.o
+diff --git a/user/boa/src/LINUX/form_src/boamain.c b/user/boa/src/LINUX/form_src/boamain.c
+index 246ccd22e..066e65eb1 100755
+--- a/user/boa/src/LINUX/form_src/boamain.c
++++ b/user/boa/src/LINUX/form_src/boamain.c
+@@ -311,6 +311,7 @@ void rtl8670_AspInit() {
+ #endif
+ #ifdef CONFIG_IPV6
+ 	boaFormDefine("formIPv6EnableDisable", formIPv6EnableDisable);		// IPv6 Enable/Disable Configuration Form
++	boaFormDefine("formLoopDetect", formLoopDetect);
+ 	boaFormDefine("formIPv6Routing", formIPv6Route);		// Routing Configuration Form
+ 	boaASPDefine("showIPv6StaticRoute", showIPv6StaticRoute);
+ 	boaFormDefine("formIPv6RefleshRouteTbl", formRefleshRouteTbl);
+diff --git a/user/boa/src/LINUX/form_src/fmget.c b/user/boa/src/LINUX/form_src/fmget.c
+index 53a0219d2..b5e436bde 100755
+--- a/user/boa/src/LINUX/form_src/fmget.c
++++ b/user/boa/src/LINUX/form_src/fmget.c
+@@ -2120,6 +2120,20 @@ int checkWrite(int eid, request * wp, int argc, char **argv)
+ 		if (1 == vChar)
+ 			boaWrite(wp, "checked");
+ 		return 0;
++	}	
++	else if ( !strcmp(name, "loopdetectenable0") ) {
++		if ( !mib_get( MIB_LOOPDETECT_ENABLE, (void *)&vChar) )
++			return -1;
++		if (0 == vChar)
++			boaWrite(wp, "checked");
++		return 0;
++	}
++	else if ( !strcmp(name, "loopdetectenable1") ) {
++		if ( !mib_get( MIB_LOOPDETECT_ENABLE, (void *)&vChar) )
++			return -1;
++		if (1 == vChar)
++			boaWrite(wp, "checked");
++		return 0;
+ 	}
+ #ifdef CONFIG_USER_IGMPPROXY
+ 	else if ( !strcmp(name, "igmpProxy0") ) {
+diff --git a/user/boa/src/LINUX/form_src/fmloopdetect.c b/user/boa/src/LINUX/form_src/fmloopdetect.c
+new file mode 100755
+index 000000000..b7ae28334
+--- /dev/null
++++ b/user/boa/src/LINUX/form_src/fmloopdetect.c
+@@ -0,0 +1,44 @@
++/*-- System inlcude files --*/
++#include <string.h>
++#include <signal.h>
++/*-- Local inlcude files --*/
++#include "../webs.h"
++#include "webform.h"
++#include "mib.h"
++#include "utility.h"
++#include "multilang.h"
++
++
++void formLoopDetect(request * wp, char *path, char *query)
++{
++	char	*str_enb, *submitUrl;
++	char tmpBuf[100];
++	unsigned char is_enabled=1, pre_enabled;
++	str_enb = boaGetVar(wp, "loopdetectEnable", "");
++
++	if(str_enb[0])
++	{
++		if (str_enb[0] == '0')
++			is_enabled = 0;
++		else
++			is_enabled = 1;
++
++		printf("Loop enable status: %d\n",is_enabled);
++		if(!mib_set(MIB_LOOPDETECT_ENABLE, (void *)&is_enabled))
++		{
++			strcpy(tmpBuf, Tset_mib_error);
++			goto setErr_igmp;
++		}
++	}
++
++	printf("Loop enable status: %d\n",is_enabled);
++	mib_update(CURRENT_SETTING, CONFIG_MIB_ALL);
++
++	submitUrl = boaGetVar(wp, "submit-url", "");
++	OK_MSG(submitUrl);
++	return;
++
++setErr_igmp:
++	ERR_MSG(tmpBuf);
++}
++
+diff --git a/user/boa/src/LINUX/form_src/webform.h b/user/boa/src/LINUX/form_src/webform.h
+index 6d421adeb..a236aa2b8 100755
+--- a/user/boa/src/LINUX/form_src/webform.h
++++ b/user/boa/src/LINUX/form_src/webform.h
+@@ -416,6 +416,7 @@ extern int ARPTableList(int eid, request * wp, int argc, char **argv);
+ extern void formRoute(request * wp, char *path, char *query);
+ extern int showStaticRoute(int eid, request * wp, int argc, char **argv);
+ #endif
++extern void formLoopDetect(request * wp, char *path, char *query);
+ #ifdef CONFIG_IPV6
+ extern void formIPv6EnableDisable(request * wp, char *path, char *query);
+ extern void formIPv6Route(request * wp, char *path, char *query);
+diff --git a/user/boa/src/LINUX/mib.h b/user/boa/src/LINUX/mib.h
+index 31cb016d1..e5beab544 100755
+--- a/user/boa/src/LINUX/mib.h
++++ b/user/boa/src/LINUX/mib.h
+@@ -797,6 +797,7 @@ typedef struct file_entry {
+ #define MIB_LAN_ALIAS_VLAN_ID					CS_ENTRY_ID + 337
+ #endif
+ #define  MIB_CONFIG_MODE    CS_ENTRY_ID + 347
++#define MIB_LOOPDETECT_ENABLE 	CS_ENTRY_ID + 348
+ 
+ #define	WLAN_CS_ENTRY_ID						CS_ENTRY_ID + 1000
+ 
+@@ -4661,6 +4662,7 @@ typedef struct config_setting {
+ 	unsigned char v6ipfOutAction; // 0 - Deny, 1 - Allow
+ 	unsigned char v6ipfInAction;  // 0 - Deny, 1 - Allow
+ 	unsigned char v6ipv6Enable;   // 0 - Disable, 1 - Enable
++	unsigned char loopdetectEnable;   // 0 - Disable, 1 - Enable
+ #if defined(IP_ACL)
+ 	unsigned char v6aclcapability;   // IPv6 ACL capability flag, 0 - disabled, 1 - enabled. Mason Yu
+ #endif
+diff --git a/user/boa/src/LINUX/mibtbl.c b/user/boa/src/LINUX/mibtbl.c
+index f4cb45906..8bd21e20c 100755
+--- a/user/boa/src/LINUX/mibtbl.c
++++ b/user/boa/src/LINUX/mibtbl.c
+@@ -1832,6 +1832,7 @@ MIB_TBL_ENTRY(MIB_ADSL_WAN_DNSV63,				CURRENT_SETTING,	"DNSV63", 					IA6_T,		_O
+ MIB_TBL_ENTRY(MIB_V6_IPF_OUT_ACTION,			CURRENT_SETTING,	"V6_IPF_OUT_ACTION",			BYTE_T,		_OFFSET(v6ipfOutAction),	 	_SIZE(v6ipfOutAction),		"1"),
+ MIB_TBL_ENTRY(MIB_V6_IPF_IN_ACTION,				CURRENT_SETTING,	"V6_IPF_IN_ACTION",			BYTE_T,		_OFFSET(v6ipfInAction),	 	_SIZE(v6ipfInAction),		"0"),
+ MIB_TBL_ENTRY(MIB_V6_IPV6_ENABLE,				CURRENT_SETTING,	"V6_IPV6_ENABLE",			BYTE_T,		_OFFSET(v6ipv6Enable),	 	_SIZE(v6ipv6Enable),		"1"),
++MIB_TBL_ENTRY(MIB_LOOPDETECT_ENABLE,			CURRENT_SETTING,	"LOOPDETECT_ENABLE",		BYTE_T,		_OFFSET(loopdetectEnable),	 	_SIZE(loopdetectEnable),"1"),
+ #ifdef IP_ACL
+ MIB_TBL_ENTRY(MIB_V6_ACL_CAPABILITY,				CURRENT_SETTING,	"V6_ACL_CAPABILITY",	BYTE_T,		_OFFSET(v6aclcapability),		_SIZE(v6aclcapability),		"0"),
+ #endif
+diff --git a/user/boa/src/web_general/adminMenu_base.js b/user/boa/src/web_general/adminMenu_base.js
+index ea7756c12..4cda97196 100755
+--- a/user/boa/src/web_general/adminMenu_base.js
++++ b/user/boa/src/web_general/adminMenu_base.js
+@@ -158,6 +158,11 @@ function generateSide() {
+ 						name: '<% multilang(LANG_LAN_INTERFACE_SETTINGS); %>',
+ 						href: pageRoot + 'tcpiplan.asp'
+ 					}
++					,
++					{
++						name: '<% multilang(LANG_LAN_INTERFACE_SETTINGS); %>',
++						href: pageRoot + 'loopdetect.asp'
++					}
+ #ifdef CONFIG_RTL867X_VLAN_MAPPING
+ 					,
+ 					{
+diff --git a/user/boa/src/web_general/loopdetect.asp b/user/boa/src/web_general/loopdetect.asp
+new file mode 100755
+index 000000000..e02b23fdd
+--- /dev/null
++++ b/user/boa/src/web_general/loopdetect.asp
+@@ -0,0 +1,40 @@
++<%SendWebHeadStr(); %>
++<title>IPv6 Enable/Disable</title>
++<title><% multilang(LANG_IPV6_E); %> <% multilang(LANG_CONFIGURATION); %></title>
++
++<SCRIPT>
++function on_submit()
++{
++	//obj.isclick = 1;
++	postTableEncrypt(document.forms[0].postSecurityFlag, document.forms[0]);
++	return true;
++}
++</SCRIPT>
++</HEAD>
++
++<body>
++<div class="intro_main ">
++	<p class="intro_title"><% multilang(LANG_IPV6); %> <% multilang(LANG_CONFIGURATION); %></p>
++	<p class="intro_content"><% multilang(LANG_THIS_PAGE_BE_USED_TO_CONFIGURE_IPV6_ENABLE_DISABLE); %></p>
++</div>
++
++<form id="form" action=/boaform/admin/formLoopDetect method=POST name="loopdetact">			
++<div class="data_common data_common_notitle">
++	<table border=0 width="500" cellspacing=4 cellpadding=0>		
++		<tr>
++			<th><% multilang(LANG_IPV6); %>:</th>
++			<td>
++				<input type="radio" value="0" name="loopdetectEnable" <% checkWrite("loopdetectenable0"); %> ><% multilang(LANG_DISABLE); %>&nbsp;&nbsp;
++				<input type="radio" value="1" name="loopdetectEnable" <% checkWrite("loopdetectenable1"); %> ><% multilang(LANG_ENABLE); %>
++			</td>
++		</tr>
++	</table>
++</div>
++<div class="btn_ctl">
++	<input class="link_bg" type="submit" class="button" value="<% multilang(LANG_APPLY_CHANGES); %>" onClick="return on_submit()">
++	<input type="hidden" value="/loopdetect.asp" name="submit-url">
++	<input type="hidden" name="postSecurityFlag" value="">		
++</div>
++</form>
++</body>
++</html>
+diff --git a/user/xmlconfig/includes/mib.h b/user/xmlconfig/includes/mib.h
+index d97066b4e..7683d45b9 100755
+--- a/user/xmlconfig/includes/mib.h
++++ b/user/xmlconfig/includes/mib.h
+@@ -799,6 +799,7 @@ typedef struct file_entry {
+ #endif
+ 
+ #define MIB_CONFIG_MODE 						CS_ENTRY_ID + 347
++#define MIB_LOOPDETECT_ENABLE                   CS_ENTRY_ID + 348
+ #define	WLAN_CS_ENTRY_ID						CS_ENTRY_ID + 1000
+ 
+ //================== start of dual wlan interface definition=================
+@@ -4669,6 +4670,8 @@ unsigned char ipAlgTFTP;
+ 	unsigned char v6ipfInAction;  // 0 - Deny, 1 - Allow
+ 	unsigned char v6ipv6Enable;   // 0 - Disable, 1 - Enable
+ #endif // if CONFIG_IPV6
++
++	unsigned char loopdetectEnable;   // 0 - Disable, 1 - Enable
+ #ifdef CONFIG_TR_064
+ 	unsigned char	tr064_enabled;
+ #endif
+diff --git a/user/xmlconfig/xml_data_mib_table.c b/user/xmlconfig/xml_data_mib_table.c
+index 83bceb6f0..8574eda98 100755
+--- a/user/xmlconfig/xml_data_mib_table.c
++++ b/user/xmlconfig/xml_data_mib_table.c
+@@ -1803,6 +1803,7 @@ XML_ENTRY_PRIMITIVE2("V6_IPF_IN_ACTION", v6ipfInAction, config_setting, "%hhu",
+ XML_ENTRY_PRIMITIVE2("V6_IPV6_ENABLE", v6ipv6Enable, config_setting, "%hhu", config->v6ipv6Enable, MIB_V6_IPV6_ENABLE); //BYTE_T
+ #endif  // #ifdef CONFIG_IPV6
+ 
++XML_ENTRY_PRIMITIVE2("LOOPDETECT_ENABLE", loopdetectEnable, config_setting, "%hhu", config->loopdetectEnable, MIB_LOOPDETECT_ENABLE); //BYTE_T
+ #ifdef CONFIG_TR_064
+ XML_ENTRY_PRIMITIVE2("TR064_ENABLED", tr064_enabled, config_setting, "%hhu", config->tr064_enabled, MIB_TR064_ENABLED); //BYTE_T
+ #endif
+-- 
+2.17.1
+
