@@ -1,0 +1,33 @@
+:root {
+	--backgroup-color:#2bd4ba;
+}
+.toplogo{
+	background:#2bd4ba;
+	width:180px;
+	height:50px;
+	padding-left: 80px;
+}
+.type_cmcc{
+	background:#2bd4ba;
+	width:605px;
+	color:#fff;
+	font-size: 15px;
+}
+.type_backgroup{
+	background:#2bd4ba;
+}
+.welcomeLink{
+	background:#2bd4ba;
+	color: #fff;
+	font-size: 14px;
+	font-weight: bold;
+	display: inline-block;
+	padding-right: 10px;
+	padding-left: 40px;
+	padding-top: 15px;
+}
+.login_title{
+        position: relative;
+        background:#2bd4ba;
+        color:#fff;
+}

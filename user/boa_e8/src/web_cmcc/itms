@@ -1,0 +1,44 @@
+<html>
+<! Copyright (c) Realtek Semiconductor Corp., 2003. All Rights Reserved. ->
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=gbk">
+<title>中国移动</title>
+<script type="text/javascript" src="share.js">
+</script>
+<STYLE type=text/css>
+@import url(/style/default.css);
+</STYLE>
+<SCRIPT language="javascript" src="common.js"></SCRIPT>
+<SCRIPT>
+
+function on_init()
+{
+	var sn = sji_queryparam("sn");
+	var confirmed = false;
+
+	confirmed = confirm("需要烧制的设备序列号为:" + sn);
+
+	document.forms[0].loid.value = sn;
+	document.forms[0].user.value = sji_queryparam("username");
+	document.forms[0].pass.value = sji_queryparam("passwd");
+
+	document.forms[0].submit();
+}
+
+</SCRIPT>
+</head>
+
+<body onLoad="on_init();" topmargin="0" leftmargin="0" marginwidth="0" marginheight="0">
+<blockquote>
+<DIV align="left" style="padding-left:20px; padding-top:5px">
+
+<form action=/boaform/form_loid_burning method=POST name="loid_burning">
+	<input type="hidden" value="" name="loid">
+	<input type="hidden" value="" name="user">
+	<input type="hidden" value="" name="pass">
+</form>
+</DIV>
+</blockquote>
+</body>
+
+</html>

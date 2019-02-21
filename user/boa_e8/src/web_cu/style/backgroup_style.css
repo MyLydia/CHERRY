@@ -1,0 +1,87 @@
+/* Modify the backgroup color for WEB */
+/* please change the background:#xxxxxx */
+.toplogo{
+	background:#2BBDD4;
+	width:180px;
+	height:50px;
+	padding-left: 80px;
+}
+.type_cmcc{
+	background:#2BBDD4;
+	width:605px;
+	color:#fff;
+	font-size: 15px;
+}
+.type_backgroup{
+	background:#2BBDD4;
+}
+.welcomeLink{
+	background:#2BBDD4;
+	color: #fff;
+	font-size: 14px;
+	font-weight: bold;
+	display: inline-block;
+	padding-right: 10px;
+	padding-left: 40px;
+	padding-top: 15px;
+}
+.login_title{
+        position: relative;
+        background:#2BBDD4;
+        color:#fff;
+}
+.left_btn{
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	border: medium none;
+	user-select: none;
+	text-align: center;
+	width: 100px;
+	height: 40px;
+	line-height: 16px;
+	background: #2BBDD4;
+	color: white;
+	font-size: 16px;
+	margin-right: 10px;
+}
+.right_btn{
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	border: medium none;
+	user-select: none;
+	text-align: center;
+	width: 100px;
+	height: 40px;
+	line-height: 16px;
+	background: #2BBDD4;
+	color: white;
+	font-size: 16px;
+	margin-left: 10px;
+}
+.reset_btn{
+	width: 150px;
+	text-align: center;
+	width: 120px;
+	height: 40px;
+	background: #2BBDD4;
+	-moz-border-radius-topleft: 5px;
+	-moz-border-radius-topright: 5px;
+	-moz-border-radius-bottomright: 10px;
+	-moz-border-radius-bottomleft: 5px;
+	-webkit-border-top-left-radius: 5px;
+	-webkit-border-top-right-radius: 5px;
+	-webkit-border-bottom-right-radius: 10px;
+	-webkit-border-bottom-left-radius: 5px;
+	border-top-left-radius: 5px;
+	border-top-right-radius: 5px;
+	border-bottom-right-radius: 10px;
+	border-bottom-left-radius: 5px;
+	color: white;
+	font-size: 18px;
+	margin-top: 10px;
+	cursor: pointer;
+	margin-left: 30px;
+	font-weight: bold;*/
+}

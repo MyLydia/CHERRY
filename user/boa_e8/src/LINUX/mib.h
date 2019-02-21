@@ -1,0 +1,7855 @@
+/*
+ *      Header file of MIB
+ *      Authors: David Hsu	<davidhsu@realtek.com.tw>
+ *      Authors: Dick Tam	<dicktam@realtek.com.tw>
+ *
+ */
+
+
+#ifndef INCLUDE_MIB_H
+#define INCLUDE_MIB_H
+#ifdef EMBED
+#include <stdint.h>
+#include <linux/config.h>
+#include <rtk/options.h>
+#include <config/autoconf.h>
+#else
+#include "../../../../include/linux/autoconf.h"
+#include "../../../../config/autoconf.h"
+#include "options.h"
+#endif
+/*+++++add by Jack for VoIP project 20/03/07+++++*/
+#ifdef VOIP_SUPPORT
+#include "voip_flash.h"
+#include "voip_flash_mib.h"
+#endif /*VOIP_SUPPORT*/
+/*-----end-----*/
+//
+//ccwei for ioctl
+//#include <linux/types.h>
+#include "chip_deps.h"
+
+#ifdef CONFIG_USER_CUSPEEDTEST
+#include <sys/time.h>
+#endif
+
+#ifndef WIN32
+#define __PACK__				__attribute__ ((packed))
+#else
+#define __PACK__
+#endif
+
+#ifdef WIN32
+#pragma pack()
+#endif
+
+#if defined(CONFIG_LUNA) && defined(GEN_WAN_MAC)
+#if defined(CONFIG_RTL8192CD)  || defined(CONFIG_RTL8192CD_MODULE)
+#ifdef CONFIG_E8B
+#ifdef CONFIG_LUNA_DUAL_LINUX
+#define WAN_HW_ETHER_START_BASE (NUM_WLAN_INTERFACE+1)
+#else
+#define WAN_HW_ETHER_START_BASE (NUM_WLAN_INTERFACE)
+#endif
+#else
+#define WAN_HW_ETHER_START_BASE 3
+#endif /*CONFIG_E8B*/
+#else
+#define WAN_HW_ETHER_START_BASE 1
+#endif // RTL8192CD
+#endif /*GEN_WAN_MAC*/
+
+/*
+ * Flash File System
+ */
+
+typedef enum { UNKNOWN_SETTING=0, RUNNING_SETTING=1, HW_SETTING=2, DEFAULT_SETTING=4, CURRENT_SETTING=8 } CONFIG_DATA_T;
+typedef enum { CONFIG_MIB_ALL=0, CONFIG_MIB_TABLE, CONFIG_MIB_CHAIN } CONFIG_MIB_T;
+
+#define SIGNATURE_LEN				8
+#define HS_CONF_SETTING_SIGNATURE_TAG		((char *)"ADSL-HS-")
+#define DS_CONF_SETTING_SIGNATURE_TAG		((char *)"ADSL-DS-")
+#define CS_CONF_SETTING_SIGNATURE_TAG		((char *)"ADSL-CS-")
+#define WEB_SIGNATURE_TAG			((char *)"ADSL-WEB")
+#define FLASH_FILE_SYSTEM_VERSION		1
+#define FLASH_DEFAULT_TO_ALL			0
+#define FLASH_DEFAULT_TO_AUGMENT		1
+#define FLASH_DEFAULT_TO_MEMORY			2
+
+
+#ifdef CONFIG_USER_CWMP_TR069
+#define MSG_SIZE (sizeof(struct cwmp_message) - sizeof(int))
+enum {
+	MSG_SEND = 10,
+	MSG_EVENT_CONNREQ,
+	MSG_TIMER,
+	MSG_RECV,
+	MSG_USERDATA_CHANGE,
+	MSG_ACTIVE_NOTIFY,
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	MSG_UPDATE_LANDEV_ONOFF,                                                                                                                       
+#endif
+	MSG_PRINT_PRMT
+};
+
+struct cwmp_message {
+	int	msg_type;
+	int	msg_datatype;
+	void*	msg_data;
+};
+#endif
+
+/* File header */
+typedef struct param_header {
+	unsigned char signature[SIGNATURE_LEN];
+	unsigned char version;
+	unsigned char checksum;
+	unsigned int len;
+} __PACK__ PARAM_HEADER_T, *PARAM_HEADER_Tp;
+
+/* Firmware image header */
+typedef struct _header_ {
+ // Kao
+	unsigned long signature;
+	unsigned long startAddr;
+	unsigned long len;
+} IMG_HEADER_T, *IMG_HEADER_Tp;
+
+#define FIRMWARE_MAGIC_NUMBER		0xa3d275e9
+#define FIRMWARE_PARAM_SIZE		0x10
+#define DST_IMAGE_ADDR			0x80000000
+
+/* scramble saved configuration data */
+#define ENCODE_DATA(data,len)
+#define DECODE_DATA(data,len)
+
+// Added by Mason Yu
+#define ACT_NONE				0
+#define ACT_START				1
+#define ACT_STOP				2
+#define ACT_RESTART				3
+#define ACT_START_2G			4
+#define ACT_STOP_2G				5
+#define ACT_RESTART_2G			6
+#define ACT_START_5G			7
+#define ACT_STOP_5G				8
+#define ACT_RESTART_5G			9
+#define ACT_RESTART_WPS				10
+#define ACT_RESTART_AND_WPS			11
+
+
+
+/*
+#define ENCODE_DATA(data,len) { \
+	int i; \
+	for (i=0; i<len; i++) \
+		data[i] = ~ ( data[i] + 0x38); \
+}
+
+#define DECODE_DATA(data,len) { \
+	int i; \
+	for (i=0; i<len; i++) \
+		data[i] = ~data[i] - 0x38;	\
+}
+*/
+
+/* Do checksum and verification for configuration data */
+#ifndef WIN32
+static inline unsigned char CHECKSUM(unsigned char *data, unsigned int len)
+#else
+__inline unsigned char CHECKSUM(unsigned char *data, unsigned int len)
+#endif
+{
+	unsigned int i;
+	unsigned char sum=0;
+
+	for (i=0; i<len; i++) {
+		sum += data[i];
+	}
+
+	sum = ~sum + 1;
+	return sum;
+}
+
+/*
+ * Webpage gzip/unzip
+ */
+#define GZIP_MAX_NAME_LEN		60
+typedef struct file_entry {
+	char name[GZIP_MAX_NAME_LEN];
+	unsigned long size;
+} FILE_ENTRY_T, *FILE_ENTRY_Tp;
+
+
+#define DWORD_SWAP(v) ( (((v&0xff)<<24)&0xff000000) | \
+						((((v>>8)&0xff)<<16)&0xff0000) | \
+						((((v>>16)&0xff)<<8)&0xff00) | \
+						(((v>>24)&0xff)&0xff) )
+#define WORD_SWAP(v) ((unsigned short)(((v>>8)&0xff) | ((v<<8)&0xff00)))
+
+/*
+ * ADSL Router MIB ID
+ */
+#define CS_ENTRY_ID								0
+
+#define MIB_ADSL_LAN_IP							CS_ENTRY_ID + 1
+#define MIB_ADSL_LAN_SUBNET						CS_ENTRY_ID + 2
+#define MIB_ADSL_LAN_IP2						CS_ENTRY_ID + 3
+#define MIB_ADSL_LAN_SUBNET2					CS_ENTRY_ID + 4
+#define MIB_ADSL_LAN_DHCP						CS_ENTRY_ID + 5
+#define MIB_ADSL_LAN_CLIENT_START				CS_ENTRY_ID + 6
+#define MIB_ADSL_LAN_CLIENT_END					CS_ENTRY_ID + 7
+#define MIB_ADSL_LAN_DHCP_LEASE					CS_ENTRY_ID + 8
+#define MIB_ADSL_LAN_DHCP_DOMAIN				CS_ENTRY_ID + 9
+#define MIB_ADSL_LAN_RIP						CS_ENTRY_ID + 10
+#define MIB_ADSL_LAN_AUTOSEARCH					CS_ENTRY_ID + 11
+#define MIB_ADSL_LAN_ENABLE_IP2					CS_ENTRY_ID + 12
+#define MIB_ADSL_LAN_DHCP_POOLUSE				CS_ENTRY_ID + 13
+#define MIB_DHCP_POOL_START						CS_ENTRY_ID + 14
+#define MIB_DHCP_POOL_END						CS_ENTRY_ID + 15
+#define MIB_DHCP_DNS_OPTION						CS_ENTRY_ID + 16
+#ifdef DEFAULT_GATEWAY_V2
+#define MIB_ADSL_WAN_DGW_IP						CS_ENTRY_ID + 17
+#define MIB_ADSL_WAN_DGW_ITF					CS_ENTRY_ID + 18
+#endif
+#define MIB_ADSL_WAN_DNS_MODE					CS_ENTRY_ID + 19
+#define MIB_ADSL_WAN_DNS1						CS_ENTRY_ID + 20
+#define MIB_ADSL_WAN_DNS2						CS_ENTRY_ID + 21
+#define MIB_ADSL_WAN_DNS3						CS_ENTRY_ID + 22
+#define MIB_ADSL_CONNECTION_MODE				CS_ENTRY_ID + 23
+#define MIB_ADSL_ENCAP_MODE						CS_ENTRY_ID + 24
+#define MIB_ADSL_MODE							CS_ENTRY_ID + 25
+#define MIB_ADSL_OLR							CS_ENTRY_ID + 26
+
+#define MIB_RIP_ENABLE							CS_ENTRY_ID + 27
+#define MIB_RIP_INTERFACE						CS_ENTRY_ID + 28
+#define MIB_RIP_VERSION							CS_ENTRY_ID + 29
+
+#define MIB_IPF_OUT_ACTION						CS_ENTRY_ID + 30
+#define MIB_IPF_IN_ACTION						CS_ENTRY_ID + 31
+#define MIB_MACF_OUT_ACTION						CS_ENTRY_ID + 32
+#define MIB_MACF_IN_ACTION						CS_ENTRY_ID + 33
+#define MIB_PORT_FW_ENABLE						CS_ENTRY_ID + 34
+#define MIB_DMZ_ENABLE							CS_ENTRY_ID + 35
+#define MIB_DMZ_IP								CS_ENTRY_ID + 36
+#ifdef NATIP_FORWARDING
+#define MIB_IP_FW_ENABLE						CS_ENTRY_ID + 37
+#endif
+#define MIB_USER_NAME							CS_ENTRY_ID + 38
+#define MIB_USER_PASSWORD						CS_ENTRY_ID + 39
+#define MIB_DEVICE_TYPE							CS_ENTRY_ID + 40
+#define MIB_INIT_LINE							CS_ENTRY_ID + 41
+#define MIB_INIT_SCRIPT							CS_ENTRY_ID + 42
+#if defined(CONFIG_USER_SNMPD_SNMPD_V2CTRAP) || defined(_CWMP_MIB_)
+#define MIB_SNMP_SYS_DESCR						CS_ENTRY_ID + 43
+#endif //defined(CONFIG_USER_SNMPD_SNMPD_V2CTRAP) || defined(_CWMP_MIB_)
+#ifdef CONFIG_USER_SNMPD_SNMPD_V2CTRAP
+#define MIB_SNMP_SYS_OID						CS_ENTRY_ID + 44
+#define MIB_SNMP_SYS_CONTACT					CS_ENTRY_ID + 45
+#define MIB_SNMP_SYS_LOCATION					CS_ENTRY_ID + 46
+#define MIB_SNMP_TRAP_IP						CS_ENTRY_ID + 47
+#define MIB_SNMP_COMM_RO						CS_ENTRY_ID + 48
+#define MIB_SNMP_COMM_RW						CS_ENTRY_ID + 49
+#endif
+#define MIB_SNMP_SYS_NAME						CS_ENTRY_ID + 50
+
+#define MIB_BRCTL_AGEINGTIME					CS_ENTRY_ID + 57
+#define MIB_BRCTL_STP							CS_ENTRY_ID + 58
+
+#define MIB_MPMODE								CS_ENTRY_ID + 59
+#define MIB_QOS_DOMAIN							CS_ENTRY_ID + 60
+#ifdef QOS_DIFFSERV
+#define MIB_QOS_DIFFSERV						CS_ENTRY_ID + 61
+#define MIB_DIFFSERV_PHBCLASS					CS_ENTRY_ID + 62
+#endif
+#define MIB_IGMP_PROXY							CS_ENTRY_ID + 63
+#define MIB_IGMP_PROXY_ITF						CS_ENTRY_ID + 64
+#define MIB_IPPT_ITF							CS_ENTRY_ID + 65
+#define MIB_IPPT_LEASE							CS_ENTRY_ID + 66
+#define MIB_IPPT_LANACC							CS_ENTRY_ID + 67
+#define MIB_SPC_ENABLE							CS_ENTRY_ID + 68
+#define MIB_SPC_IPTYPE							CS_ENTRY_ID + 69
+#define MIB_ACL_CAPABILITY						CS_ENTRY_ID + 70
+#define MIB_ADSL_WAN_DHCPS						CS_ENTRY_ID + 71
+#define MIB_DHCP_MODE							CS_ENTRY_ID + 72
+#if defined(URL_BLOCKING_SUPPORT)||defined(URL_ALLOWING_SUPPORT)
+#define MIB_URL_CAPABILITY						CS_ENTRY_ID + 73  // Mason Yu for URL Blocking
+#endif
+#ifdef TIME_ZONE
+#define MIB_NTP_ENABLED 						CS_ENTRY_ID + 74
+#define MIB_NTP_TIMEZONE_DB_INDEX					CS_ENTRY_ID + 75
+#define MIB_DST_ENABLED 						CS_ENTRY_ID + 76
+#define MIB_NTP_SERVER_HOST1						CS_ENTRY_ID + 77
+#define MIB_NTP_SERVER_HOST2						CS_ENTRY_ID + 78
+#define MIB_NTP_IF_WAN							CS_ENTRY_ID + 79
+#endif
+#define	MIB_UPNP_DAEMON							CS_ENTRY_ID + 81  // Mason Yu for UPNP
+#define MIB_UPNP_EXT_ITF						CS_ENTRY_ID + 82
+#ifdef DOMAIN_BLOCKING_SUPPORT
+#define MIB_DOMAINBLK_CAPABILITY				CS_ENTRY_ID + 83  // Mason Yu for Domain Blocking
+#endif
+
+#ifdef CONFIG_IGMP_FORBID
+#define MIB_IGMP_FORBID_ENABLE					CS_ENTRY_ID + 84     //alex_huang for igmp forbid
+#endif
+#define MIB_QOS_DEFAULT_QUEUE					CS_ENTRY_ID + 85
+
+// Jenny, system log
+#define MIB_SYSLOG_LOG_LEVEL					CS_ENTRY_ID + 86
+#define MIB_SYSLOG_DISPLAY_LEVEL				CS_ENTRY_ID + 87
+#ifdef CONFIG_USER_RTK_SYSLOG_REMOTE
+#define MIB_SYSLOG_MODE							CS_ENTRY_ID + 88
+#define MIB_SYSLOG_SERVER_IP					CS_ENTRY_ID + 89
+#define MIB_SYSLOG_SERVER_PORT					CS_ENTRY_ID + 90
+#endif
+
+// Added by Mason Yu for write superUser into Current Setting
+#define MIB_SUSER_NAME							CS_ENTRY_ID + 91
+#define MIB_SUSER_PASSWORD						CS_ENTRY_ID + 92
+#define MIB_ADSL_TONE							CS_ENTRY_ID + 93
+// ioctl for direct bridge mode, jiunming
+#define MIB_DIRECT_BRIDGE_MODE					CS_ENTRY_ID + 94
+#define MIB_ADSL_HIGH_INP						CS_ENTRY_ID + 95
+#define MIB_SYSLOG								CS_ENTRY_ID + 100
+#define MIB_MAXLOGLEN							CS_ENTRY_ID + 101
+#define MIB_ADSL_DEBUG							CS_ENTRY_ID + 102
+#define MIB_ETH_MAC_CTRL						CS_ENTRY_ID + 103
+
+
+#define MIB_DOS_ENABLED							CS_ENTRY_ID + 104
+
+//for DoS
+#ifdef DOS_SUPPORT
+#define MIB_DOS_SYSSYN_FLOOD					CS_ENTRY_ID + 105
+#define MIB_DOS_SYSFIN_FLOOD					CS_ENTRY_ID + 106
+#define MIB_DOS_SYSUDP_FLOOD					CS_ENTRY_ID + 107
+#define MIB_DOS_SYSICMP_FLOOD					CS_ENTRY_ID + 108
+#define MIB_DOS_PIPSYN_FLOOD					CS_ENTRY_ID + 109
+#define MIB_DOS_PIPFIN_FLOOD					CS_ENTRY_ID + 110
+#define MIB_DOS_PIPUDP_FLOOD					CS_ENTRY_ID + 111
+#define MIB_DOS_PIPICMP_FLOOD					CS_ENTRY_ID + 112
+#define MIB_DOS_BLOCK_TIME						CS_ENTRY_ID + 113
+#endif
+
+// Mason Yu for DHCP Server Gateway address
+#define MIB_ADSL_LAN_DHCP_GATEWAY				CS_ENTRY_ID + 114
+
+#ifdef CTC_TELECOM_ACCOUNT
+#define MIB_CTC_ACCOUNT_ENABLE					CS_ENTRY_ID + 115
+#endif //CTC_TELECOM_ACCOUNT
+
+#ifdef CONFIG_IP_NF_ALG_ONOFF
+#ifdef CONFIG_NF_CONNTRACK_FTP
+#define MIB_IP_ALG_FTP							CS_ENTRY_ID + 116
+#endif
+#ifdef CONFIG_NF_CONNTRACK_H323
+#define MIB_IP_ALG_H323							CS_ENTRY_ID + 117
+#endif
+#ifdef CONFIG_NF_CONNTRACK_IRC
+#define MIB_IP_ALG_IRC							CS_ENTRY_ID + 118
+#endif
+#ifdef CONFIG_NF_CONNTRACK_RTSP
+#define MIB_IP_ALG_RTSP							CS_ENTRY_ID + 119
+#endif
+#ifdef CONFIG_NF_CONNTRACK_QUAKE3
+#define MIB_IP_ALG_QUAKE3						CS_ENTRY_ID + 120
+#endif
+#ifdef CONFIG_NF_CONNTRACK_CUSEEME
+#define MIB_IP_ALG_CUSEEME						CS_ENTRY_ID + 121
+#endif
+#ifdef CONFIG_NF_CONNTRACK_L2TP
+#define MIB_IP_ALG_L2TP							CS_ENTRY_ID + 122
+#endif
+#ifdef CONFIG_NF_CONNTRACK_IPSEC
+#define MIB_IP_ALG_IPSEC						CS_ENTRY_ID + 123
+#endif
+#ifdef CONFIG_NF_CONNTRACK_SIP
+#define MIB_IP_ALG_SIP							CS_ENTRY_ID + 124
+#endif
+#ifdef CONFIG_NF_CONNTRACK_PPTP
+#define MIB_IP_ALG_PPTP							CS_ENTRY_ID + 125
+#endif
+#endif
+#ifdef DNS_BIND_PVC_SUPPORT
+#define MIB_DNS_BIND_PVC_ENABLE					CS_ENTRY_ID + 126
+#define MIB_DNS_BIND_PVC1						CS_ENTRY_ID + 127
+#define MIB_DNS_BIND_PVC2						CS_ENTRY_ID + 128
+#define MIB_DNS_BIND_PVC3						CS_ENTRY_ID + 129
+#endif
+//ql_xu add
+#ifdef NAT_CONN_LIMIT
+#define MIB_NAT_CONN_LIMIT						CS_ENTRY_ID + 130
+#endif
+
+#ifdef CONFIG_USER_ZEBRA_OSPFD_OSPFD
+#define MIB_OSPF_ENABLE							CS_ENTRY_ID + 131
+#endif
+
+#define MIB_8021P_PRIO							CS_ENTRY_ID + 132
+//add by ramen
+#ifdef QOS_SPEED_LIMIT_SUPPORT
+#define MIB_PVC_TOTAL_BANDWIDTH					CS_ENTRY_ID + 133
+#endif
+
+//#ifdef ADDRESS_MAPPING
+#define MIB_ADDRESS_MAP_TYPE					CS_ENTRY_ID + 134
+#define MIB_LOCAL_START_IP						CS_ENTRY_ID + 135
+#define MIB_LOCAL_END_IP						CS_ENTRY_ID + 136
+#define MIB_GLOBAL_START_IP						CS_ENTRY_ID + 137
+#define MIB_GLOBAL_END_IP						CS_ENTRY_ID + 138
+//#endif
+
+#ifdef CONFIG_USER_SAMBA
+#define MIB_SAMBA_ENABLE					CS_ENTRY_ID + 139
+#ifdef CONFIG_USER_NMBD
+#define MIB_SAMBA_NETBIOS_NAME					CS_ENTRY_ID + 140
+#endif
+#define MIB_SAMBA_SERVER_STRING					CS_ENTRY_ID + 141
+#endif
+
+#ifdef ELAN_LINK_MODE_INTRENAL_PHY
+#define MIB_ETH_MODE							CS_ENTRY_ID + 143
+#endif
+
+#ifdef CONFIG_USER_RTK_SYSLOG
+#ifdef SEND_LOG
+#define MIB_LOG_SERVER_IP					 	CS_ENTRY_ID + 144
+#define MIB_LOG_SERVER_NAME						CS_ENTRY_ID + 145
+#define MIB_LOG_SERVER_PASSWORD					CS_ENTRY_ID + 146
+#endif
+#endif
+//#ifdef QSETUP_WEB_REDIRECT
+//#define MIB_QSETUP_REDIRECT					CS_ENTRY_ID + 147
+//#endif
+#define MIB_DHCPS_DNS1							CS_ENTRY_ID + 148
+#define MIB_DHCPS_DNS2							CS_ENTRY_ID + 149
+#define MIB_DHCPS_DNS3							CS_ENTRY_ID + 150
+
+#ifdef CONFIG_USER_SNMPD_SNMPD_V2CTRAP
+#define MIB_SNMPD_ENABLE						CS_ENTRY_ID + 151
+#endif
+
+#ifdef TCP_UDP_CONN_LIMIT
+#define MIB_CONNLIMIT_ENABLE					CS_ENTRY_ID + 152
+#define MIB_CONNLIMIT_UDP						CS_ENTRY_ID + 153
+#define MIB_CONNLIMIT_TCP						CS_ENTRY_ID + 154
+#endif //TCP_UDP_CONN_LIMIT
+
+
+#ifdef WEB_REDIRECT_BY_MAC
+#define MIB_WEB_REDIR_BY_MAC_URL				CS_ENTRY_ID + 155
+#define MIB_WEB_REDIR_BY_MAC_INTERVAL			CS_ENTRY_ID + 156
+#endif
+
+#ifdef CONFIG_USB_ETH
+#define MIB_USBETH_ITF_GROUP					CS_ENTRY_ID + 157
+#endif //CONFIG_USB_ETH
+// Mason Yu. combine_1p_4p_PortMapping
+#if (defined( ITF_GROUP_1P) && defined(ITF_GROUP))
+#define MIB_ETH_ITF_GROUP						CS_ENTRY_ID + 158
+#endif
+/*ql:20081114 START: new IP QoS*/
+//#ifdef NEW_IP_QOS_SUPPORT
+#ifdef CONFIG_USER_IP_QOS
+#define MIB_QOS_UPRATE							CS_ENTRY_ID + 159
+#define MIB_QOS_POLICY							CS_ENTRY_ID + 160
+#define MIB_TOTAL_BANDWIDTH						CS_ENTRY_ID + 161
+#define MIB_TOTAL_BANDWIDTH_LIMIT_EN			CS_ENTRY_ID + 162
+#define MIB_QOS_MODE							CS_ENTRY_ID + 163
+#endif
+/*ql:20081114 END*/
+#define MIB_PRED_PRIO							CS_ENTRY_ID + 164
+#define MIB_DHCP_SUBNET_MASK					CS_ENTRY_ID + 165
+
+#ifdef _SUPPORT_CAPTIVEPORTAL_PROFILE_
+#define MIB_CAPTIVEPORTAL_ENABLE				CS_ENTRY_ID + 166
+#define MIB_CAPTIVEPORTAL_URL					CS_ENTRY_ID + 167
+#endif
+
+//ql 20090119 START: for imagenio service
+#ifdef IMAGENIO_IPTV_SUPPORT
+/*ping_zhang:20090930 START:add for Telefonica new option 240*/
+#if 0
+#define MIB_OPCH_ADDRESS						CS_ENTRY_ID + 168
+#define MIB_OPCH_PORT							CS_ENTRY_ID + 169
+#endif
+/*ping_zhang:20090930 END*/
+#define MIB_IMAGENIO_DNS1						CS_ENTRY_ID + 170
+#define MIB_IMAGENIO_DNS2						CS_ENTRY_ID + 171
+#endif
+//ql 20090119 END
+
+
+
+#ifdef CONFIG_IPV6
+#ifdef CONFIG_USER_RADVD
+#define MIB_V6_MAXRTRADVINTERVAL				CS_ENTRY_ID + 175
+#define MIB_V6_MINRTRADVINTERVAL				CS_ENTRY_ID + 176
+#define MIB_V6_ADVCURHOPLIMIT					CS_ENTRY_ID + 177
+#define MIB_V6_ADVDEFAULTLIFETIME				CS_ENTRY_ID + 178
+#define MIB_V6_ADVREACHABLETIME					CS_ENTRY_ID + 179
+#define MIB_V6_ADVRETRANSTIMER					CS_ENTRY_ID + 180
+#define MIB_V6_ADVLINKMTU						CS_ENTRY_ID + 181
+#define MIB_V6_PREFIX_IP						CS_ENTRY_ID + 182
+#define MIB_V6_PREFIX_LEN						CS_ENTRY_ID + 183
+#define MIB_V6_VALIDLIFETIME					CS_ENTRY_ID + 184
+#define MIB_V6_PREFERREDLIFETIME				CS_ENTRY_ID + 185
+#define MIB_V6_SENDADVERT						CS_ENTRY_ID + 186
+#define MIB_V6_MANAGEDFLAG						CS_ENTRY_ID + 187
+#define MIB_V6_OTHERCONFIGFLAG					CS_ENTRY_ID + 188
+#define MIB_V6_ONLINK							CS_ENTRY_ID + 189
+#define MIB_V6_AUTONOMOUS						CS_ENTRY_ID + 190
+#define MIB_V6_PREFIX_MODE					CS_ENTRY_ID + 191
+#endif
+
+#ifdef CONFIG_USER_DHCPV6_ISC_DHCP411
+#define MIB_DHCPV6S_PREFIX_LENGTH				CS_ENTRY_ID + 192
+#define MIB_DHCPV6S_RANGE_START					CS_ENTRY_ID + 193
+#define MIB_DHCPV6S_RANGE_END					CS_ENTRY_ID + 194
+#define MIB_DHCPV6S_DEFAULT_LEASE				CS_ENTRY_ID + 195
+#define MIB_DHCPV6S_PREFERRED_LIFETIME			CS_ENTRY_ID + 196
+#define MIB_DHCPV6R_UPPER_IFINDEX				CS_ENTRY_ID + 197
+#define MIB_DHCPV6_MODE							CS_ENTRY_ID + 198
+#define MIB_DHCPV6S_RENEW_TIME					CS_ENTRY_ID + 199
+#define MIB_DHCPV6S_REBIND_TIME					CS_ENTRY_ID + 200
+#define MIB_DHCPV6S_CLIENT_DUID					CS_ENTRY_ID + 201
+#endif
+
+#ifdef CONFIG_USER_ECMH
+#define	MIB_MLD_PROXY_DAEMON					CS_ENTRY_ID + 202  // Mason Yu. MLD Proxy
+#define MIB_MLD_PROXY_EXT_ITF					CS_ENTRY_ID + 203  // Mason Yu. MLD Proxy
+#endif
+
+#ifdef DNSV6_BIND_PVC_SUPPORT
+#define MIB_DNSV6_BIND_PVC_ENABLE				CS_ENTRY_ID + 204
+#define MIB_DNSV6_BIND_PVC1						CS_ENTRY_ID + 205
+#define MIB_DNSV6_BIND_PVC2						CS_ENTRY_ID + 206
+#define MIB_DNSV6_BIND_PVC3						CS_ENTRY_ID + 207
+#endif
+
+#define MIB_LAN_DNSV6_MODE							CS_ENTRY_ID + 208
+#define MIB_ADSL_WAN_DNSV61						CS_ENTRY_ID + 209
+#define MIB_ADSL_WAN_DNSV62						CS_ENTRY_ID + 210
+#define MIB_ADSL_WAN_DNSV63						CS_ENTRY_ID + 211
+#endif // of CONFIG_IPV6
+
+#ifdef CONFIG_USER_PPTP_CLIENT_PPTP
+#define MIB_PPTP_ENABLE							CS_ENTRY_ID + 220
+#endif //end of CONFIG_USER_PPTP_CLIENT_PPTP
+
+#ifdef CONFIG_USER_L2TPD_L2TPD
+#define MIB_L2TP_ENABLE							CS_ENTRY_ID + 221
+#endif //end of CONFIG_USER_L2TPD_L2TPD
+/***************************** start of WLAN setting *****************************/
+
+#ifdef CONFIG_NET_IPIP
+#define MIB_IPIP_ENABLE							CS_ENTRY_ID + 222
+#endif//end of CONFIG_NET_IPIP
+
+// Mason Yu. use table not chain
+#define MIB_DMS_ENABLE							CS_ENTRY_ID + 223
+
+#if defined(NEW_IP_QOS_SUPPORT) || defined(CONFIG_USER_IP_QOS_3)
+#define MIB_QOS_ENABLE_QOS						CS_ENTRY_ID + 224
+#endif
+
+#define MIB_WAN_MODE CS_ENTRY_ID + 225
+
+#ifdef CONFIG_TR_064
+#define MIB_TR064_ENABLED CS_ENTRY_ID + 226
+#endif
+
+
+#ifdef CONFIG_IPV6
+	#ifdef CONFIG_USER_RADVD
+		#define MIB_V6_RDNSS1							CS_ENTRY_ID + 229
+		#define MIB_V6_RDNSS2							CS_ENTRY_ID + 230
+		#define MIB_V6_ULAPREFIX_ENABLE					CS_ENTRY_ID + 231
+		#define MIB_V6_ULAPREFIX						CS_ENTRY_ID + 232
+		#define MIB_V6_ULAPREFIX_LEN					CS_ENTRY_ID + 233
+		#define MIB_V6_ULAPREFIX_VALID_TIME				CS_ENTRY_ID + 234
+		#define MIB_V6_ULAPREFIX_PREFER_TIME			CS_ENTRY_ID + 235
+		#define MIB_V6_PREFIX_ENABLE					CS_ENTRY_ID + 236
+		#define MIB_V6_IPF_OUT_ACTION					CS_ENTRY_ID + 237
+		#define MIB_V6_IPF_IN_ACTION					CS_ENTRY_ID + 238
+	#else
+		#define MIB_V6_IPF_OUT_ACTION					CS_ENTRY_ID + 229
+		#define MIB_V6_IPF_IN_ACTION					CS_ENTRY_ID + 230
+	#endif
+	#define MIB_V6_IPV6_ENABLE							MIB_V6_IPF_IN_ACTION +1
+#endif
+
+#ifdef CONFIG_RTK_L34_ENABLE
+#define MIB_MAC_BASED_TAG_DECISION					CS_ENTRY_ID + 240
+#define MIB_LAN_VLAN_ID1					CS_ENTRY_ID + 241
+#define MIB_LAN_VLAN_ID2					CS_ENTRY_ID + 242
+#define MIB_LAN_PORT_MASK1					CS_ENTRY_ID + 243
+#define MIB_LAN_PORT_MASK2					CS_ENTRY_ID + 244
+#define MIB_LAN_IP_VERSION1					CS_ENTRY_ID + 245
+#define MIB_LAN_IP_VERSION2					CS_ENTRY_ID + 246
+#ifdef CONFIG_IPV6
+#define MIB_LAN_IPV6_MODE1					CS_ENTRY_ID + 247
+#define MIB_LAN_IPV6_MODE2					CS_ENTRY_ID + 248
+#define MIB_LAN_IPV6_ADDR1  CS_ENTRY_ID + 249
+#define MIB_LAN_IPV6_ADDR2  CS_ENTRY_ID + 250
+#define MIB_LAN_IPV6_PREFIX_LEN1  CS_ENTRY_ID + 251
+#define MIB_LAN_IPV6_PREFIX_LEN2  CS_ENTRY_ID + 252
+#endif
+#endif
+#ifdef CONFIG_E8B
+#define MIB_OLD_DSL_MODE  CS_ENTRY_ID + 253
+#endif
+
+#ifdef FTP_ACCOUNT_INDEPENDENT
+#define MIB_FTP_USER		CS_ENTRY_ID + 254
+#define MIB_FTP_PASSWD	CS_ENTRY_ID + 255
+#endif
+
+#ifdef TELNET_ACCOUNT_INDEPENDENT
+#define MIB_TELNET_USER	CS_ENTRY_ID + 256
+#define MIB_TELNET_PASSWD	CS_ENTRY_ID + 257
+#endif
+
+#ifdef TIME_ZONE
+#define MIB_NTP_IF_TYPE	CS_ENTRY_ID + 258
+#define MIB_NTP_INTERVAL	CS_ENTRY_ID + 259
+#endif
+
+#if defined(CONFIG_USER_IP_QOS) && defined(_PRMT_X_CT_COM_QOS_)
+#define CTQOS_MODE								CS_ENTRY_ID + 260
+#define MIB_QOS_ENABLE_FORCE_WEIGHT				CS_ENTRY_ID + 261
+#define MIB_QOS_ENABLE_DSCP_MARK				CS_ENTRY_ID + 262
+#define MIB_QOS_ENABLE_1P						CS_ENTRY_ID + 263
+#endif
+
+// Magician: E8B Security
+#define MIB_FW_GRADE							CS_ENTRY_ID + 264
+#define MIB_MAC_FILTER_EBTABLES_ENABLE			CS_ENTRY_ID + 265
+#define MIB_MAC_FILTER_EBTABLES_MODE			CS_ENTRY_ID + 266 //0-black list 1--white list
+#define MIB_IPFILTER_ON_OFF						CS_ENTRY_ID + 267
+// End Magician
+
+#ifdef _PRMT_USBRESTORE
+#define MIB_USBRESTORE							CS_ENTRY_ID + 268
+#endif
+
+#ifdef CONFIG_USER_DDNS
+#define MIB_DDNS_ENABLE CS_ENTRY_ID + 269
+#endif
+
+#ifdef CONFIG_IPV6
+#define MIB_IPV6_LAN_IP_ADDR					CS_ENTRY_ID + 270
+#define MIB_IPV6_LAN_PREFIX						CS_ENTRY_ID + 271
+#define MIB_IPV6_LAN_PREFIX_LEN					CS_ENTRY_ID + 272
+#endif
+
+#ifdef CONFIG_USER_RTK_LBD
+#define MIB_LBD_ENABLE						CS_ENTRY_ID + 273
+#define MIB_LBD_EXIST_PERIOD					CS_ENTRY_ID + 274
+#define MIB_LBD_CANCEL_PERIOD					CS_ENTRY_ID + 275
+#define MIB_LBD_ETHER_TYPE						CS_ENTRY_ID + 276
+#endif
+
+#define MIB_LOID							CS_ENTRY_ID + 277
+#define MIB_LOID_PASSWD							CS_ENTRY_ID + 278
+#if defined(CONFIG_GPON_FEATURE)
+#define MIB_GPON_PLOAM_PASSWD						CS_ENTRY_ID + 279
+#endif
+#if defined(CONFIG_RTK_OMCI_V1)
+#define MIB_OMCI_DBGLVL							CS_ENTRY_ID + 280
+#define MIB_OMCI_LOGFILE						CS_ENTRY_ID + 281
+#define MIB_OMCI_PORT_TYPE						CS_ENTRY_ID + 282
+#define MIB_DUAL_MGMT_MODE						CS_ENTRY_ID + 283
+#define MIB_OMCI_CUSTOM_BDP						CS_ENTRY_ID + 284
+#define MIB_OMCI_CUSTOM_RDP						CS_ENTRY_ID + 285
+#define MIB_OMCI_CUSTOM_MCAST					CS_ENTRY_ID + 286
+#define MIB_OMCI_CUSTOM_ME						CS_ENTRY_ID + 287
+#endif
+#if defined(CONFIG_RTK_IGMP)
+#define MIB_RTK_IGMP_DBGEN						CS_ENTRY_ID + 288
+#define MIB_RTK_IGMP_DROPV1						CS_ENTRY_ID + 289
+#define MIB_RTK_IGMP_VIDTYPE					CS_ENTRY_ID + 290
+#define MIB_RTK_IGMP_TAGDECISION				CS_ENTRY_ID + 291
+#endif
+
+// BELOW MIB for INFORM PACKET to maintain VERSION INFOMATION
+#define RTK_DEVID_MANUFACTURER					CS_ENTRY_ID + 292
+#define RTK_DEVID_OUI							CS_ENTRY_ID + 293
+#define RTK_DEVID_PRODUCTCLASS					CS_ENTRY_ID + 294
+#define RTK_DEVINFO_SPECVER						CS_ENTRY_ID + 295
+#define RTK_DEVINFO_SWVER						CS_ENTRY_ID + 296
+#define RTK_DEVINFO_HWVER						CS_ENTRY_ID + 297
+
+#define MIB_DEVICE_NAME							CS_ENTRY_ID + 298
+#if defined(CONFIG_IPV6) && defined(CONFIG_USER_RADVD)
+#define MIB_V6_RADVD_ENABLE					CS_ENTRY_ID + 299
+#endif
+
+#if defined(CONFIG_IPV6) &&  defined(CONFIG_USER_DHCPV6_ISC_DHCP411)
+#define MIB_DHCPV6S_MIN_ADDRESS					CS_ENTRY_ID + 300
+#define MIB_DHCPV6S_MAX_ADDRESS					CS_ENTRY_ID + 301
+#endif
+
+#if defined(CONFIG_IPV6)
+#define MIB_PREFIXINFO_PREFIX_MODE				CS_ENTRY_ID + 302
+#define MIB_PREFIXINFO_DELEGATED_WANCONN		CS_ENTRY_ID + 303
+
+#define MIB_DNSINFO_WANCONN						CS_ENTRY_ID + 304
+#endif
+
+#define MIB_LOID_OLD							CS_ENTRY_ID + 305
+#define MIB_LOID_PASSWD_OLD						CS_ENTRY_ID + 306
+
+
+#define MIB_TFTP_SERVER_ADDR					CS_ENTRY_ID + 307
+#define MIB_POSIX_TZ_STRING						CS_ENTRY_ID + 308
+#define MIB_BOOT_FILENAME						CS_ENTRY_ID + 309
+
+#define MIB_MAC_FILTER_SRC_ENABLE				CS_ENTRY_ID + 310
+
+#ifdef CONFIG_MULTI_FTPD_ACCOUNT
+#define MIB_FTP_ANNONYMOUS						CS_ENTRY_ID + 311
+#endif
+#ifdef CONFIG_MULTI_SMBD_ACCOUNT
+#define MIB_SMB_ANNONYMOUS						CS_ENTRY_ID + 312
+#endif
+
+#ifdef CONFIG_LED_INDICATOR_TIMER
+#define MIB_LED_STATUS							CS_ENTRY_ID + 313
+#endif
+
+#ifdef CTC_DNS_SPEED_LIMIT
+#define MIB_DNS_LIMIT_ACTION					CS_ENTRY_ID + 314
+#endif
+
+#ifdef SUPPORT_WAN_BANDWIDTH_INFO
+//siyuan 2016-1-8 save wan bandwidth config
+#define MIB_WAN_BANDWIDTH_ENABLE				CS_ENTRY_ID + 315
+#define MIB_WAN_BANDWIDTH_INTERVAL				CS_ENTRY_ID + 316
+#endif
+
+#ifdef SUPPORT_WEB_REDIRECT
+//siyuan 2016-1-11 save web redirect rule
+#define MIB_REDIRECT_WELCOME_ENABLE				CS_ENTRY_ID + 317
+#define MIB_REDIRECT_WELCOME_URL				CS_ENTRY_ID + 318
+#define MIB_REDIRECT_WELCOME_TIME				CS_ENTRY_ID + 319
+#endif
+#ifdef CONFIG_USER_LAN_BANDWIDTH_CONTROL
+#define MIB_LANHOST_BANDWIDTH_CONTROL_ENABLE	CS_ENTRY_ID + 320
+#endif
+#ifdef CONFIG_USER_LAN_BANDWIDTH_MONITOR
+#define MIB_LANHOST_BANDWIDTH_MONITOR_ENABLE	CS_ENTRY_ID + 321
+#define MIB_LANHOST_BANDWIDTH_INTERVAL			CS_ENTRY_ID + 322
+#endif
+#ifdef SUPPORT_WEB_PUSHUP
+#define MIB_FIRMWARE_DOWNURL					CS_ENTRY_ID + 323
+#define MIB_UPGRADE_WEB_PUSH_TIME				CS_ENTRY_ID + 324
+#define MIB_UPGRADE_MODE						CS_ENTRY_ID + 325
+#define MIB_UPGRADE_METHOD						CS_ENTRY_ID + 326
+#define MIB_UPGRADE_ID							CS_ENTRY_ID + 327
+#endif
+#ifdef SUPPORT_WEB_REDIRECT
+#define MIB_REDIRECT_IP							CS_ENTRY_ID + 328
+#define MIB_ITMS_ADDR							CS_ENTRY_ID + 329
+#define MIB_404_REDIRECT_URL					CS_ENTRY_ID + 330
+#define MIB_404_REDIRECT_ENABLE					CS_ENTRY_ID + 331
+#endif
+
+#define MIB_CWMP_DL_PHASE                   CS_ENTRY_ID + 333
+
+#ifdef CONFIG_SUPPORT_AUTO_DIAG
+#define MIB_AUTO_DIAG_ENABLE					CS_ENTRY_ID + 334
+#define MIB_AUTO_DIAG_URL					CS_ENTRY_ID + 335
+#define MIB_AUTO_DIAG_STARTTIME					CS_ENTRY_ID + 336
+#endif
+
+//for mp tool
+#if defined(CONFIG_APOLLO_MP_TEST)
+#define MIB_MP_FIN                                                      CS_ENTRY_ID+337
+#endif
+
+#ifdef CONFIG_RTK_OMCI_V1
+#define MIB_OMCI_VENDOR_PRODUCT_CODE			CS_ENTRY_ID + 338
+#define MIB_OMCI_FAKE_OK						CS_ENTRY_ID + 339
+#endif
+
+
+#ifdef CONFIG_GPON_FEATURE
+#define MIB_VLAN_CFG_TYPE						CS_ENTRY_ID + 340
+#define MIB_VLAN_MANU_MODE						CS_ENTRY_ID + 341
+#define MIB_VLAN_MANU_TAG_VID						CS_ENTRY_ID + 342
+#define MIB_VLAN_MANU_TAG_PRI						CS_ENTRY_ID + 343
+#define MIB_OMCI_OLT_MODE						CS_ENTRY_ID + 344
+#define MIB_OMCI_SW_VER1						CS_ENTRY_ID + 345
+#define MIB_OMCI_SW_VER2						CS_ENTRY_ID + 346
+#define MIB_OMCC_VER							CS_ENTRY_ID + 347
+#define MIB_OMCI_TM_OPT							CS_ENTRY_ID + 348
+#define MIB_OMCI_LOGFILE_MASK						CS_ENTRY_ID + 349
+//#define MIB_OMCI_VENDOR_ID						CS_ENTRY_ID + 350
+#endif
+
+#ifdef CONFIG_SUPPORT_AUTO_DIAG
+#define MIB_AUTO_DIAG_TFTP_PORT				CS_ENTRY_ID + 351
+#endif
+
+/*To handle internal reserved vlan, sync with rtk_rg_define.h*/
+#define MIB_UNTAG_WAN_VLAN_ID					CS_ENTRY_ID + 352
+#define MIB_FWD_CPU_VLAN_ID						CS_ENTRY_ID + 353
+#define MIB_FWD_PROTO_BLOCK_VLAN_ID				CS_ENTRY_ID + 354
+#define MIB_FWD_BIND_INTERNET_VLAN_ID			CS_ENTRY_ID + 355
+#define MIB_FWD_BIND_OTHER_VLAN_ID				CS_ENTRY_ID + 356
+
+#ifdef CONFIG_RTK_OMCI_V1
+#define MIB_OMCI_VEIP_SLOTID					CS_ENTRY_ID + 357
+#endif
+
+#ifdef CONFIG_USER_LANNETINFO
+#define MIB_MAX_LAN_HOST_NUM					CS_ENTRY_ID + 358
+#define MIB_MAX_CONTROL_LIST_NUM				CS_ENTRY_ID + 359
+#endif
+
+#ifdef CONFIG_RG_SLEEPMODE_TIMER
+#define MIB_RG_SLEEPMODE_ENABLE                 CS_ENTRY_ID + 360
+#endif
+
+#ifdef CONFIG_MASTER_WLAN0_ENABLE
+#ifdef CONFIG_RTL_WDS_SUPPORT
+#ifdef CONFIG_RTL_VAP_SUPPORT
+#define DEFAULT_BIND_LAN_OFFSET		18			//0,1,2,3 ext-0, ext-1, root, vap1, vap2, vap3, vap4, wds5, wds6, wds7 ,wds8, wds9, wds10, wds11, wds12
+#else
+#define DEFAULT_BIND_LAN_OFFSET		14			//0,1,2,3 ext-0, ext-1, root, wds1, wds2, wds3 ,wds4, wds5, wds6, wds7, wds8
+#endif
+#else
+#ifdef CONFIG_RTL_VAP_SUPPORT
+#define DEFAULT_BIND_LAN_OFFSET		10			//0,1,2,3 ext-0, ext-1, root, vap1, vap2, vap3, vap4
+#else
+#define DEFAULT_BIND_LAN_OFFSET		5			//0,1,2,3 ext-0, ext-1
+#endif
+#endif
+#else
+#define DEFAULT_BIND_LAN_OFFSET		5			//0,1,2,3 ext-0, ext-1
+#endif
+
+#define MIB_MAC_DMAC2CVID_DISABLE			CS_ENTRY_ID + 361
+#define MIB_AVALANCHE_ENABLE				CS_ENTRY_ID + 362
+#if (!defined(CONFIG_CMCC) && !defined(CONFIG_CU)) || defined(CONFIG_CMCC_BACKDOOR)
+#define MIB_E8BDUSER_NAME							CS_ENTRY_ID + 363
+#define MIB_E8BDUSER_PASSWORD						CS_ENTRY_ID + 364
+#endif
+
+/* For An-Hui e8-C Behavior Analysis */
+#ifdef CONFIG_USER_BEHAVIOR_ANALYSIS
+#define MIB_BA_ENABLE					CS_ENTRY_ID + 365
+#define MIB_BA_PERIODIC				CS_ENTRY_ID + 366
+#define MIB_BA_URL					CS_ENTRY_ID + 367
+#define MIB_BA_USERNAME				CS_ENTRY_ID + 368
+#define MIB_BA_PASSWORD				CS_ENTRY_ID + 369
+#define MIB_BA_COMPRESS_PWD			CS_ENTRY_ID + 370
+#define MIB_BA_FLOW_EXPORT_PERIODIC		CS_ENTRY_ID + 371
+#define MIB_BA_DEV_CTRL_ENABLE			CS_ENTRY_ID + 372
+#define MIB_BA_FLOW_STAT_ENABLE		CS_ENTRY_ID + 373
+#define MIB_BA_PACKET_STAT_ENABLE		CS_ENTRY_ID + 374
+#endif
+#define MIB_PORT_BANDWIDTH_CONTROL_ENABLE	CS_ENTRY_ID + 375
+
+#ifdef CONFIG_USER_LANNETINFO
+#define MIB_LANNETINFO_FLAG						CS_ENTRY_ID + 379
+#endif
+
+#ifdef WLAN_WPS_VAP
+#define MIB_WPS_ENABLE                                          CS_ENTRY_ID + 380
+#define MIB_WPS_SSID                                            CS_ENTRY_ID + 381
+#define MIB_WPS_TIMEOUT                                         CS_ENTRY_ID + 382
+#endif
+
+#if defined(CONFIG_USER_L2TPD_L2TPD) &&  defined(CONFIG_USER_PPTP_CLIENT_PPTP)
+#define MIB_VPN_ACL_NAPT_RULE_RECYC_TIME		CS_ENTRY_ID + 383
+#endif
+#ifdef CONFIG_USER_RTK_ONUCOMM
+#define MIB_ONUCOMM_FW_STATUS					CS_ENTRY_ID + 384
+#endif
+#ifdef CONFIG_GPON_FEATURE
+#define MIB_PON_CUSTOM_SDK						CS_ENTRY_ID + 385
+#endif
+
+#define MIB_FW_ENABLE							CS_ENTRY_ID + 386
+#define MIB_PSD_ENABLE							CS_ENTRY_ID + 387
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define MIB_IPFILTER_IN_ENABLE                  CS_ENTRY_ID + 388
+#define MIB_IPFILTER_OUT_ENABLE                 CS_ENTRY_ID + 389
+#define MIB_NTP_SERVER_HOST3                                            CS_ENTRY_ID + 390
+#define MIB_NTP_SERVER_HOST4                                            CS_ENTRY_ID + 391
+#define MIB_NTP_SERVER_HOST5                                            CS_ENTRY_ID + 392
+#endif
+
+#if defined(CONFIG_USER_DHCPV6_ISC_DHCP411) 
+#define MIB_DHCPV6S_DNS_ASSIGN_MODE				CS_ENTRY_ID + 394
+#define MIB_DHCPV6S_POOL_ADDR_FORMAT				CS_ENTRY_ID + 395
+#endif
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define MIB_CMCC_OSGI_API_VER                                           CS_ENTRY_ID + 396
+#endif
+#ifdef _PRMT_X_CT_COM_DATA_SPEED_LIMIT_
+#define MIB_DATA_SPEED_LIMIT_UP_MODE			CS_ENTRY_ID + 397
+#define MIB_DATA_SPEED_LIMIT_DOWN_MODE			CS_ENTRY_ID + 398
+#endif
+#define MIB_DMZ_WAN								CS_ENTRY_ID + 399
+#if defined(CONFIG_GPON_FEATURE)
+#define MIB_NGPON_PLOAM_PASSWD						CS_ENTRY_ID + 400
+#endif
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define MIB_IP_QOS_MANDATORY_BANDWIDTH_EN			CS_ENTRY_ID + 401
+#define MIB_STORM_CONTROL_BIT_RATE	CS_ENTRY_ID + 402
+#endif
+
+#ifdef CONFIG_NF_CONNTRACK_TFTP
+#define MIB_IP_ALG_TFTP							CS_ENTRY_ID + 403
+#endif
+#define MIB_NAPT_MAXSESSION_ENABLE				CS_ENTRY_ID + 404
+#define MIB_NAPT_MAXSESSION_NUM					CS_ENTRY_ID + 405
+#define MIB_IGMP_SNOOPING_GROUP_TIMEOUT			CS_ENTRY_ID + 406
+#define MIB_PORT_UNBIND_WIFI_UNTAG_VID			CS_ENTRY_ID + 407
+#ifdef _PRMT_C_CU_LOGALARM_
+#define MIB_ALARM_ENABLE				CS_ENTRY_ID + 408
+#define MIB_ALARM_LEVEL				CS_ENTRY_ID + 409
+#endif
+
+#if defined(CONFIG_GPON_FEATURE) || defined(CONFIG_EPON_FEATURE)
+#define MIB_PON_REG_MODE						CS_ENTRY_ID + 410
+#endif
+
+#ifdef CONFIG_USER_LAN_PORT_AS_ETH_WAN
+#define MIB_ETH_WAN_PORT_PHY_INDEX CS_ENTRY_ID + 411
+#endif
+
+#ifdef CONFIG_RTK_L34_ENABLE
+#define MIB_FWD_CPU_SVLAN_ID					CS_ENTRY_ID + 412
+#endif
+
+#define	WLAN_CS_ENTRY_ID						CS_ENTRY_ID + 1000
+//================== start of dual wlan interface definition=================
+
+#define DUAL_WLAN_START_ID						WLAN_CS_ENTRY_ID
+
+#define MIB_WLAN_SSID							DUAL_WLAN_START_ID + 1
+#define MIB_WLAN1_SSID							DUAL_WLAN_START_ID + 2
+
+#define MIB_WLAN_CHAN_NUM						DUAL_WLAN_START_ID + 3
+#define MIB_WLAN1_CHAN_NUM						DUAL_WLAN_START_ID + 4
+
+#define MIB_WLAN_WEP							DUAL_WLAN_START_ID + 5
+#define MIB_WLAN1_WEP							DUAL_WLAN_START_ID + 6
+
+#define MIB_WLAN_WEP64_KEY1						DUAL_WLAN_START_ID + 7
+#define MIB_WLAN1_WEP64_KEY1					DUAL_WLAN_START_ID + 8
+
+#define MIB_WLAN_WEP64_KEY2						DUAL_WLAN_START_ID + 9
+#define MIB_WLAN1_WEP64_KEY2					DUAL_WLAN_START_ID + 10
+
+#define MIB_WLAN_WEP64_KEY3						DUAL_WLAN_START_ID + 11
+#define MIB_WLAN1_WEP64_KEY3					DUAL_WLAN_START_ID + 12
+
+#define MIB_WLAN_WEP64_KEY4						DUAL_WLAN_START_ID + 13
+#define MIB_WLAN1_WEP64_KEY4					DUAL_WLAN_START_ID + 14
+
+#define MIB_WLAN_WEP128_KEY1					DUAL_WLAN_START_ID + 15
+#define MIB_WLAN1_WEP128_KEY1					DUAL_WLAN_START_ID + 16
+
+#define MIB_WLAN_WEP128_KEY2					DUAL_WLAN_START_ID + 17
+#define MIB_WLAN1_WEP128_KEY2					DUAL_WLAN_START_ID + 18
+
+#define MIB_WLAN_WEP128_KEY3					DUAL_WLAN_START_ID + 19
+#define MIB_WLAN1_WEP128_KEY3					DUAL_WLAN_START_ID + 20
+
+#define MIB_WLAN_WEP128_KEY4					DUAL_WLAN_START_ID + 21
+#define MIB_WLAN1_WEP128_KEY4					DUAL_WLAN_START_ID + 22
+
+#define MIB_WLAN_WEP_KEY_TYPE					DUAL_WLAN_START_ID + 23
+#define MIB_WLAN1_WEP_KEY_TYPE					DUAL_WLAN_START_ID + 24
+
+#define MIB_WLAN_WEP_DEFAULT_KEY				DUAL_WLAN_START_ID + 25
+#define MIB_WLAN1_WEP_DEFAULT_KEY				DUAL_WLAN_START_ID + 26
+
+#define MIB_WLAN_FRAG_THRESHOLD					DUAL_WLAN_START_ID + 27
+#define MIB_WLAN1_FRAG_THRESHOLD				DUAL_WLAN_START_ID + 28
+
+#define MIB_WLAN_SUPPORTED_RATE					DUAL_WLAN_START_ID + 29
+#define MIB_WLAN1_SUPPORTED_RATE				DUAL_WLAN_START_ID + 30
+
+#define MIB_WLAN_BEACON_INTERVAL				DUAL_WLAN_START_ID + 31
+#define MIB_WLAN1_BEACON_INTERVAL				DUAL_WLAN_START_ID + 32
+
+#define MIB_WLAN_PREAMBLE_TYPE					DUAL_WLAN_START_ID + 33
+#define MIB_WLAN1_PREAMBLE_TYPE					DUAL_WLAN_START_ID + 34
+
+#define MIB_WLAN_BASIC_RATE						DUAL_WLAN_START_ID + 35
+#define MIB_WLAN1_BASIC_RATE					DUAL_WLAN_START_ID + 36
+
+#define MIB_WLAN_RTS_THRESHOLD					DUAL_WLAN_START_ID + 37
+#define MIB_WLAN1_RTS_THRESHOLD					DUAL_WLAN_START_ID + 38
+
+#define MIB_WLAN_AUTH_TYPE						DUAL_WLAN_START_ID + 39
+#define MIB_WLAN1_AUTH_TYPE						DUAL_WLAN_START_ID + 40
+
+#define MIB_WLAN_HIDDEN_SSID					DUAL_WLAN_START_ID + 41
+#define MIB_WLAN1_HIDDEN_SSID					DUAL_WLAN_START_ID + 42
+
+#define MIB_WLAN_DISABLED						DUAL_WLAN_START_ID + 43
+#define MIB_WLAN1_DISABLED						DUAL_WLAN_START_ID + 44
+
+// Added by Mason Yu for TxPower
+#define MIB_TX_POWER							DUAL_WLAN_START_ID + 45
+#define MIB_WLAN1_TX_POWER						DUAL_WLAN_START_ID + 46
+
+#define MIB_WLAN_MLCSTRATE						DUAL_WLAN_START_ID + 47
+#define MIB_WLAN1_MLCSTRATE						DUAL_WLAN_START_ID + 48
+
+#ifdef WLAN_WPA
+#define MIB_WLAN_ENCRYPT						DUAL_WLAN_START_ID + 49
+#define MIB_WLAN1_ENCRYPT						DUAL_WLAN_START_ID + 50
+
+#define MIB_WLAN_ENABLE_SUPP_NONWPA				DUAL_WLAN_START_ID + 51
+#define MIB_WLAN1_ENABLE_SUPP_NONWPA			DUAL_WLAN_START_ID + 52
+
+#define MIB_WLAN_SUPP_NONWPA					DUAL_WLAN_START_ID + 53
+#define MIB_WLAN1_SUPP_NONWPA					DUAL_WLAN_START_ID + 54
+
+#define MIB_WLAN_WPA_AUTH						DUAL_WLAN_START_ID + 55
+#define MIB_WLAN1_WPA_AUTH						DUAL_WLAN_START_ID + 56
+
+#define MIB_WLAN_WPA_CIPHER_SUITE				DUAL_WLAN_START_ID + 57
+#define MIB_WLAN1_WPA_CIPHER_SUITE				DUAL_WLAN_START_ID + 58
+
+#define MIB_WLAN_WPA_PSK						DUAL_WLAN_START_ID + 59
+#define MIB_WLAN1_WPA_PSK						DUAL_WLAN_START_ID + 60
+
+#define MIB_WLAN_WPA_GROUP_REKEY_TIME			DUAL_WLAN_START_ID + 61
+#define MIB_WLAN1_WPA_GROUP_REKEY_TIME			DUAL_WLAN_START_ID + 62
+
+#ifdef WLAN_1x
+#define MIB_WLAN_RS_IP							DUAL_WLAN_START_ID + 63
+#define MIB_WLAN1_RS_IP							DUAL_WLAN_START_ID + 64
+
+#define MIB_WLAN_RS_PORT						DUAL_WLAN_START_ID + 65
+#define MIB_WLAN1_RS_PORT						DUAL_WLAN_START_ID + 66
+
+#define MIB_WLAN_RS_PASSWORD					DUAL_WLAN_START_ID + 67
+#define MIB_WLAN1_RS_PASSWORD					DUAL_WLAN_START_ID + 68
+
+#define MIB_WLAN_ENABLE_1X						DUAL_WLAN_START_ID + 69
+#define MIB_WLAN1_ENABLE_1X						DUAL_WLAN_START_ID + 70
+#endif
+
+#define MIB_WLAN_WPA_PSK_FORMAT					DUAL_WLAN_START_ID + 71
+#define MIB_WLAN1_WPA_PSK_FORMAT				DUAL_WLAN_START_ID + 72
+
+//#define MIB_WLAN_WPA2_PRE_AUTH					DUAL_WLAN_START_ID + 73
+//#define MIB_WLAN1_WPA2_PRE_AUTH					DUAL_WLAN_START_ID + 74
+
+#define MIB_WLAN_WPA2_CIPHER_SUITE				DUAL_WLAN_START_ID + 75
+#define MIB_WLAN1_WPA2_CIPHER_SUITE				DUAL_WLAN_START_ID + 76
+#endif
+
+#define MIB_WLAN_INACTIVITY_TIME				DUAL_WLAN_START_ID + 77
+#define MIB_WLAN1_INACTIVITY_TIME				DUAL_WLAN_START_ID + 78
+
+#define MIB_WLAN_RATE_ADAPTIVE_ENABLED			DUAL_WLAN_START_ID + 79
+#define MIB_WLAN1_RATE_ADAPTIVE_ENABLED			DUAL_WLAN_START_ID + 80
+
+#ifdef WLAN_ACL
+// access control MIB id
+#define MIB_WLAN_AC_ENABLED						DUAL_WLAN_START_ID + 81
+#define MIB_WLAN1_AC_ENABLED					DUAL_WLAN_START_ID + 82
+
+//#define MIB_WLAN_AC_NUM							DUAL_WLAN_START_ID + 83
+//#define MIB_WLAN1_AC_NUM						DUAL_WLAN_START_ID + 84
+
+//#define MIB_WLAN_AC_ADDR						DUAL_WLAN_START_ID + 85
+//#define MIB_WLAN1_AC_ADDR						DUAL_WLAN_START_ID + 86
+
+//#define MIB_WLAN_AC_ADDR_ADD					DUAL_WLAN_START_ID + 87
+//#define MIB_WLAN1_AC_ADDR_ADD					DUAL_WLAN_START_ID + 88
+
+//#define MIB_WLAN_AC_ADDR_DEL					DUAL_WLAN_START_ID + 89
+//#define MIB_WLAN1_AC_ADDR_DEL					DUAL_WLAN_START_ID + 90
+
+//#define MIB_WLAN_AC_ADDR_DELALL					DUAL_WLAN_START_ID + 91
+//#define MIB_WLAN1_AC_ADDR_DELALL				DUAL_WLAN_START_ID + 92
+#endif
+
+#define MIB_WLAN_GUEST_SSID_ENDTIME			DUAL_WLAN_START_ID + 87
+#define MIB_WLAN1_GUEST_SSID_ENDTIME			DUAL_WLAN_START_ID + 88
+
+#define MIB_WLAN_GUEST_SSID						DUAL_WLAN_START_ID + 89
+#define MIB_WLAN1_GUEST_SSID					DUAL_WLAN_START_ID + 90
+
+#define MIB_WLAN_GUEST_SSID_DURATION			DUAL_WLAN_START_ID + 91
+#define MIB_WLAN1_GUEST_SSID_DURATION			DUAL_WLAN_START_ID + 92
+
+#define MIB_WLAN_DTIM_PERIOD					DUAL_WLAN_START_ID + 93
+#define MIB_WLAN1_DTIM_PERIOD					DUAL_WLAN_START_ID + 94
+
+#define MIB_WLAN_MODE							DUAL_WLAN_START_ID + 95
+#define MIB_WLAN1_MODE							DUAL_WLAN_START_ID + 96
+
+#define MIB_WLAN_NETWORK_TYPE					DUAL_WLAN_START_ID + 97
+#define MIB_WLAN1_NETWORK_TYPE					DUAL_WLAN_START_ID + 98
+
+//#define MIB_WLAN_DEFAULT_SSID					DUAL_WLAN_START_ID + 99
+//#define MIB_WLAN1_DEFAULT_SSID					DUAL_WLAN_START_ID + 100
+
+#ifdef WLAN_WPA
+#define MIB_WLAN_ACCOUNT_RS_ENABLED				DUAL_WLAN_START_ID + 101
+#define MIB_WLAN1_ACCOUNT_RS_ENABLED			DUAL_WLAN_START_ID + 102
+
+#define MIB_WLAN_ACCOUNT_RS_IP					DUAL_WLAN_START_ID + 103
+#define MIB_WLAN1_ACCOUNT_RS_IP					DUAL_WLAN_START_ID + 104
+
+#define MIB_WLAN_ACCOUNT_RS_PORT				DUAL_WLAN_START_ID + 105
+#define MIB_WLAN1_ACCOUNT_RS_PORT				DUAL_WLAN_START_ID + 106
+
+#define MIB_WLAN_ACCOUNT_RS_PASSWORD			DUAL_WLAN_START_ID + 107
+#define MIB_WLAN1_ACCOUNT_RS_PASSWORD			DUAL_WLAN_START_ID + 108
+
+#define MIB_WLAN_ACCOUNT_UPDATE_ENABLED			DUAL_WLAN_START_ID + 109
+#define MIB_WLAN1_ACCOUNT_UPDATE_ENABLED		DUAL_WLAN_START_ID + 110
+
+#define MIB_WLAN_ACCOUNT_UPDATE_DELAY			DUAL_WLAN_START_ID + 111
+#define MIB_WLAN1_ACCOUNT_UPDATE_DELAY			DUAL_WLAN_START_ID + 112
+
+#define MIB_WLAN_ENABLE_MAC_AUTH				DUAL_WLAN_START_ID + 113
+#define MIB_WLAN1_ENABLE_MAC_AUTH				DUAL_WLAN_START_ID + 114
+
+#define MIB_WLAN_RS_RETRY						DUAL_WLAN_START_ID + 115
+#define MIB_WLAN1_RS_RETRY						DUAL_WLAN_START_ID + 116
+
+#define MIB_WLAN_RS_INTERVAL_TIME				DUAL_WLAN_START_ID + 117
+#define MIB_WLAN1_RS_INTERVAL_TIME				DUAL_WLAN_START_ID + 118
+
+#define MIB_WLAN_ACCOUNT_RS_RETRY				DUAL_WLAN_START_ID + 119
+#define MIB_WLAN1_ACCOUNT_RS_RETRY				DUAL_WLAN_START_ID + 120
+
+#define MIB_WLAN_ACCOUNT_RS_INTERVAL_TIME		DUAL_WLAN_START_ID + 121
+#define MIB_WLAN1_ACCOUNT_RS_INTERVAL_TIME		DUAL_WLAN_START_ID + 122
+#endif
+
+//#ifdef WLAN_WDS
+#define MIB_WLAN_WDS_ENABLED					DUAL_WLAN_START_ID + 125
+#define MIB_WLAN1_WDS_ENABLED					DUAL_WLAN_START_ID + 126
+
+#define MIB_WLAN_WDS_NUM						DUAL_WLAN_START_ID + 127
+#define MIB_WLAN1_WDS_NUM						DUAL_WLAN_START_ID + 128
+
+//#define MIB_WLAN_WDS							DUAL_WLAN_START_ID + 129  // Magician: Obsoleted
+//#define MIB_WLAN1_WDS							DUAL_WLAN_START_ID + 130  // Magician: Obsoleted
+
+//#define MIB_WLAN_WDS_ADD						DUAL_WLAN_START_ID + 131
+//#define MIB_WLAN1_WDS_ADD						DUAL_WLAN_START_ID + 132
+
+//#define MIB_WLAN_WDS_DEL						DUAL_WLAN_START_ID + 133
+//#define MIB_WLAN1_WDS_DEL						DUAL_WLAN_START_ID + 134
+
+//#define MIB_WLAN_WDS_DELALL						DUAL_WLAN_START_ID + 135
+//#define MIB_WLAN1_WDS_DELALL					DUAL_WLAN_START_ID + 136
+
+#define MIB_WLAN_WDS_ENCRYPT		DUAL_WLAN_START_ID + 137
+#define MIB_WLAN1_WDS_ENCRYPT		DUAL_WLAN_START_ID + 138
+#define MIB_WLAN_WDS_WEP_FORMAT		DUAL_WLAN_START_ID + 139
+#define MIB_WLAN1_WDS_WEP_FORMAT		DUAL_WLAN_START_ID + 140
+#define MIB_WLAN_WDS_WEP_KEY		DUAL_WLAN_START_ID + 141
+#define MIB_WLAN1_WDS_WEP_KEY		DUAL_WLAN_START_ID + 142
+#define MIB_WLAN_WDS_PSK_FORMAT		DUAL_WLAN_START_ID + 143
+#define MIB_WLAN1_WDS_PSK_FORMAT		DUAL_WLAN_START_ID + 144
+#define MIB_WLAN_WDS_PSK		DUAL_WLAN_START_ID + 145
+#define MIB_WLAN1_WDS_PSK		DUAL_WLAN_START_ID + 146
+#define MIB_WLAN_BAND							DUAL_WLAN_START_ID + 159
+#define MIB_WLAN1_BAND							DUAL_WLAN_START_ID + 160
+
+#define MIB_WLAN_FIX_RATE						DUAL_WLAN_START_ID + 161
+#define MIB_WLAN1_FIX_RATE						DUAL_WLAN_START_ID + 162
+
+//#define MIB_WLAN_PRIVACY_CHECK					DUAL_WLAN_START_ID + 163
+//#define MIB_WLAN1_PRIVACY_CHECK					DUAL_WLAN_START_ID + 164
+
+#define MIB_WLAN_BLOCK_RELAY					DUAL_WLAN_START_ID + 165
+#define MIB_WLAN1_BLOCK_RELAY					DUAL_WLAN_START_ID + 166
+
+// Added by jiunming for setting an option "ethernet to wireless blocking" in page wladvanced.asp
+#define MIB_WLAN_BLOCK_ETH2WIR					DUAL_WLAN_START_ID + 167
+#define MIB_WLAN1_BLOCK_ETH2WIR					DUAL_WLAN_START_ID + 168
+
+#define MIB_WLAN_ITF_GROUP						DUAL_WLAN_START_ID + 169
+#define MIB_WLAN1_ITF_GROUP						DUAL_WLAN_START_ID + 170
+
+#ifdef WLAN_WEB_REDIRECT  //jiunming,web_redirect
+#define MIB_WLAN_WEB_REDIR_URL					DUAL_WLAN_START_ID + 171
+#define MIB_WLAN1_WEB_REDIR_URL					DUAL_WLAN_START_ID + 172
+#endif
+
+#ifdef WLAN_QoS	//Added for WMM support
+#define MIB_WLAN_QoS							DUAL_WLAN_START_ID + 173
+#define MIB_WLAN1_QoS							DUAL_WLAN_START_ID + 174
+#endif
+
+#define MIB_WLAN_DIG							DUAL_WLAN_START_ID + 175
+#define MIB_WLAN1_DIG							DUAL_WLAN_START_ID + 176
+
+#define MIB_WLAN_BEACON_ADVERTISEMENT			DUAL_WLAN_START_ID + 177
+#define MIB_WLAN1_BEACON_ADVERTISEMENT			DUAL_WLAN_START_ID + 178
+
+#ifdef WLAN_MBSSID
+#define MIB_WLAN_BLOCK_MBSSID					DUAL_WLAN_START_ID + 179
+#define MIB_WLAN1_BLOCK_MBSSID					DUAL_WLAN_START_ID + 180
+#endif
+
+#define MIB_WLAN_MAC_CTRL						DUAL_WLAN_START_ID + 181
+#define MIB_WLAN1_MAC_CTRL						DUAL_WLAN_START_ID + 182
+
+#ifdef WLAN_MBSSID
+#define MIB_WLAN_VAP0_ITF_GROUP					DUAL_WLAN_START_ID + 183
+#define MIB_WLAN_VAP1_ITF_GROUP					DUAL_WLAN_START_ID + 185
+#define MIB_WLAN_VAP2_ITF_GROUP					DUAL_WLAN_START_ID + 187
+#define MIB_WLAN_VAP3_ITF_GROUP					DUAL_WLAN_START_ID + 189
+
+#define MIB_WLAN1_VAP0_ITF_GROUP				DUAL_WLAN_START_ID + 184
+#define MIB_WLAN1_VAP1_ITF_GROUP				DUAL_WLAN_START_ID + 186
+#define MIB_WLAN1_VAP2_ITF_GROUP				DUAL_WLAN_START_ID + 188
+#define MIB_WLAN1_VAP3_ITF_GROUP				DUAL_WLAN_START_ID + 190
+#endif
+
+#ifdef WLAN_QoS	//Added for WMM support
+#define MIB_WLAN_APSD_ENABLE					DUAL_WLAN_START_ID + 193
+#define MIB_WLAN1_APSD_ENABLE					DUAL_WLAN_START_ID + 194
+#endif
+
+#define MIB_WLAN_PROTECTION_DISABLED			DUAL_WLAN_START_ID + 195
+#define MIB_WLAN1_PROTECTION_DISABLED			DUAL_WLAN_START_ID + 196
+
+#define MIB_WLAN_AGGREGATION 					DUAL_WLAN_START_ID + 197
+#define MIB_WLAN1_AGGREGATION					DUAL_WLAN_START_ID + 198
+
+#define MIB_WLAN_SHORTGI_ENABLED				DUAL_WLAN_START_ID + 199
+#define MIB_WLAN1_SHORTGI_ENABLED				DUAL_WLAN_START_ID + 200
+
+#define MIB_WLAN_CHANNEL_WIDTH  				DUAL_WLAN_START_ID + 201
+#define MIB_WLAN1_CHANNEL_WIDTH					DUAL_WLAN_START_ID + 202
+
+#define MIB_WLAN_CONTROL_BAND					DUAL_WLAN_START_ID + 203
+#define MIB_WLAN1_CONTROL_BAND					DUAL_WLAN_START_ID + 204
+
+#define MIB_WLAN_WAPI_PSK						DUAL_WLAN_START_ID + 205
+#define MIB_WLAN1_WAPI_PSK						DUAL_WLAN_START_ID + 206
+
+#define MIB_WLAN_WAPI_PSKLEN					DUAL_WLAN_START_ID + 207
+#define MIB_WLAN1_WAPI_PSKLEN					DUAL_WLAN_START_ID + 208
+
+#define MIB_WLAN_WAPI_PSK_FORMAT				DUAL_WLAN_START_ID + 209
+#define MIB_WLAN1_WAPI_PSK_FORMAT				DUAL_WLAN_START_ID + 210
+
+#define MIB_WLAN_WAPI_AUTH						DUAL_WLAN_START_ID + 211
+#define MIB_WLAN1_WAPI_AUTH						DUAL_WLAN_START_ID + 212
+
+#define MIB_WLAN_WAPI_ASIPADDR    				DUAL_WLAN_START_ID + 213
+#define MIB_WLAN1_WAPI_ASIPADDR					DUAL_WLAN_START_ID + 214
+
+#define MIB_WLAN_WAPI_SEARCH_CERTINFO   		DUAL_WLAN_START_ID + 215
+#define MIB_WLAN1_WAPI_SEARCH_CERTINFO			DUAL_WLAN_START_ID + 216
+
+#define MIB_WLAN_WAPI_SEARCH_CERTINDEX  		DUAL_WLAN_START_ID + 217
+#define MIB_WLAN1_WAPI_SEARCH_CERTINDEX			DUAL_WLAN_START_ID + 218
+
+#define MIB_WLAN_WAPI_MCAST_REKEYTYPE   		DUAL_WLAN_START_ID + 219
+#define MIB_WLAN1_WAPI_MCAST_REKEYTYPE			DUAL_WLAN_START_ID + 220
+
+#define MIB_WLAN_WAPI_MCAST_TIME				DUAL_WLAN_START_ID + 221
+#define MIB_WLAN1_WAPI_MCAST_TIME				DUAL_WLAN_START_ID + 222
+
+#define MIB_WLAN_WAPI_MCAST_PACKETS      		DUAL_WLAN_START_ID + 223
+#define MIB_WLAN1_WAPI_MCAST_PACKETS			DUAL_WLAN_START_ID + 224
+
+#define MIB_WLAN_WAPI_UCAST_REKETTYPE    		DUAL_WLAN_START_ID + 225
+#define MIB_WLAN1_WAPI_UCAST_REKETTYPE			DUAL_WLAN_START_ID + 226
+
+#define MIB_WLAN_WAPI_UCAST_TIME    	 		DUAL_WLAN_START_ID + 227
+#define MIB_WLAN1_WAPI_UCAST_TIME				DUAL_WLAN_START_ID + 228
+
+#define MIB_WLAN_WAPI_UCAST_PACKETS    	 		DUAL_WLAN_START_ID + 229
+#define MIB_WLAN1_WAPI_UCAST_PACKETS			DUAL_WLAN_START_ID + 230
+
+#define MIB_WLAN_WAPI_CA_INIT            		DUAL_WLAN_START_ID + 231
+#define MIB_WLAN1_WAPI_CA_INIT					DUAL_WLAN_START_ID + 232
+
+#define MIB_WLAN_PHY_BAND_SELECT				DUAL_WLAN_START_ID + 233
+#define MIB_WLAN1_PHY_BAND_SELECT				DUAL_WLAN_START_ID + 234
+
+#define MIB_WLAN_MAC_PHY_MODE					DUAL_WLAN_START_ID + 235
+#define MIB_WLAN1_MAC_PHY_MODE					DUAL_WLAN_START_ID + 236
+
+// WPS
+//#ifdef WIFI_SIMPLE_CONFIG
+#define MIB_WSC_DISABLE 						DUAL_WLAN_START_ID + 237
+#define MIB_WLAN1_WSC_DISABLE					DUAL_WLAN_START_ID + 238
+
+#define MIB_WSC_METHOD							DUAL_WLAN_START_ID + 239
+#define MIB_WLAN1_WSC_METHOD					DUAL_WLAN_START_ID + 240
+
+#define MIB_WSC_AUTH							DUAL_WLAN_START_ID + 241
+#define MIB_WLAN1_WSC_AUTH						DUAL_WLAN_START_ID + 242
+
+#define MIB_WSC_ENC								DUAL_WLAN_START_ID + 243
+#define MIB_WLAN1_WSC_ENC						DUAL_WLAN_START_ID + 244
+
+#define MIB_WSC_MANUAL_ENABLED 					DUAL_WLAN_START_ID + 245
+#define MIB_WLAN1_WSC_MANUAL_ENABLED			DUAL_WLAN_START_ID + 246
+
+#define MIB_WSC_PSK								DUAL_WLAN_START_ID + 247
+#define MIB_WLAN1_WSC_PSK						DUAL_WLAN_START_ID + 248
+
+#define MIB_WSC_SSID							DUAL_WLAN_START_ID + 249
+#define MIB_WLAN1_WSC_SSID						DUAL_WLAN_START_ID + 250
+
+#define MIB_WSC_UPNP_ENABLED					DUAL_WLAN_START_ID + 251
+#define MIB_WLAN1_WSC_UPNP_ENABLED				DUAL_WLAN_START_ID + 252
+
+#define MIB_WSC_REGISTRAR_ENABLED 				DUAL_WLAN_START_ID + 253
+#define MIB_WLAN1_WSC_REGISTRAR_ENABLED			DUAL_WLAN_START_ID + 254
+
+#define MIB_WSC_CONFIG_BY_EXT_REG 				DUAL_WLAN_START_ID + 255
+#define MIB_WLAN1_WSC_CONFIG_BY_EXT_REG			DUAL_WLAN_START_ID + 256
+
+#define MIB_WLAN_11N_COEXIST  				DUAL_WLAN_START_ID + 257
+#define MIB_WLAN1_11N_COEXIST				DUAL_WLAN_START_ID + 258
+//#endif
+
+#ifdef WLAN_UNIVERSAL_REPEATER
+#define MIB_REPEATER_ENABLED1					DUAL_WLAN_START_ID + 259
+#define MIB_REPEATER_ENABLED2					DUAL_WLAN_START_ID + 260
+#define MIB_REPEATER_SSID1						DUAL_WLAN_START_ID + 261
+#define MIB_REPEATER_SSID2						DUAL_WLAN_START_ID + 262
+#endif
+#define MIB_WLAN_AUTO_CHAN_ENABLED              DUAL_WLAN_START_ID + 263
+#define MIB_WLAN1_AUTO_CHAN_ENABLED             DUAL_WLAN_START_ID + 264
+
+#define MIB_WLAN_LIFETIME						DUAL_WLAN_START_ID + 265
+#define MIB_WLAN1_LIFETIME						DUAL_WLAN_START_ID + 266
+
+#ifdef WLAN_RATE_PRIOR
+#define MIB_WLAN_RATE_PRIOR						DUAL_WLAN_START_ID + 267
+#define MIB_WLAN1_RATE_PRIOR					DUAL_WLAN_START_ID + 268
+#endif
+
+#define MIB_WLAN_TX_POWER_HIGH                 	DUAL_WLAN_START_ID + 269
+#define MIB_WLAN1_TX_POWER_HIGH                 DUAL_WLAN_START_ID + 270
+
+#define DUAL_WLAN_END_ID						DUAL_WLAN_START_ID + 271
+
+//==================end of dual wlan interface definition=================
+
+
+#if defined(CONFIG_RTL_92D_SUPPORT)
+#define MIB_WLAN_BAND2G5G_SELECT				DUAL_WLAN_END_ID + 1
+#endif //CONFIG_RTL_92D_SUPPORT
+
+#define MIB_WIFI_TEST							DUAL_WLAN_END_ID + 2
+#define MIB_WSC_CONFIGURED						DUAL_WLAN_END_ID + 3
+#define MIB_WSC_PIN								DUAL_WLAN_END_ID + 4
+
+#ifdef CONFIG_RTL_92D_SUPPORT
+#define MIB_WLAN_BAND2G5G_SINGLE_SELECT			DUAL_WLAN_END_ID + 5
+#endif //CONFIG_RTL_92D_SUPPORT
+#define MIB_WSC_VERSION					DUAL_WLAN_END_ID + 6
+#define MIB_WIFI_REGDOMAIN_DEMO			DUAL_WLAN_END_ID + 7
+#define MIB_WIFI_MODULE_DISABLED				DUAL_WLAN_END_ID + 8
+#if defined(WLAN_DUALBAND_CONCURRENT) && defined(CONFIG_RTL_STA_CONTROL_SUPPORT)
+#define MIB_WIFI_STA_CONTROL					DUAL_WLAN_END_ID + 9
+#endif
+#ifdef WIFI_TIMER_SCHEDULE
+#define MIB_WIFI_SSID_ENABLE_STATUS				DUAL_WLAN_END_ID + 10
+#endif
+#define MIB_WLAN_SITE_SURVEY_TIME				DUAL_WLAN_END_ID + 11
+
+#if defined(WLAN_DUALBAND_CONCURRENT) && defined(CONFIG_RTL_STA_CONTROL_SUPPORT)
+#define MIB_WLAN_BANDST_ENABLE					DUAL_WLAN_END_ID + 12
+#define MIB_WLAN_BANDST_RSSTHRDHIGH				DUAL_WLAN_END_ID + 13
+#define MIB_WLAN_BANDST_RSSTHRDLOW				DUAL_WLAN_END_ID + 14
+#define MIB_WLAN_BANDST_CHANNELUSETHRD			DUAL_WLAN_END_ID + 15
+#define MIB_WLAN_BANDST_STEERINGINTERVAL		DUAL_WLAN_END_ID + 16
+#define MIB_WLAN_BANDST_STALOADTHRESHOLD2G		DUAL_WLAN_END_ID + 17
+#endif
+
+/***************************** end of WLAN setting *****************************/
+
+
+
+#define HS_ENTRY_ID					2000
+#if !defined(CONFIG_CMCC) && !defined(CONFIG_CU)
+#define MIB_SUPER_NAME					HS_ENTRY_ID + 1
+#define MIB_SUPER_PASSWORD				HS_ENTRY_ID + 2
+#endif
+#define MIB_ELAN_MAC_ADDR				HS_ENTRY_ID + 3
+#define MIB_WLAN_MAC_ADDR				HS_ENTRY_ID + 4
+#define MIB_WAN_PHY_PORT				HS_ENTRY_ID + 5
+#define MIB_HW_FON_KEYWORD				HS_ENTRY_ID + 6
+
+#define MIB_HW_CWMP_MANUFACTURER		HS_ENTRY_ID + 7
+#define MIB_HW_CWMP_PRODUCTCLASS		HS_ENTRY_ID + 8
+#define MIB_HW_HWVER					HS_ENTRY_ID + 9
+
+#define MIB_OUI							HS_ENTRY_ID + 10
+#define MIB_PORT_REMAPPING              HS_ENTRY_ID + 11
+#define MIB_GPON_ONU_MODEL				HS_ENTRY_ID + 12
+//#if WLAN_SUPPORT
+
+#define MIB_HW_REG_DOMAIN				HS_ENTRY_ID + 14
+#define MIB_HW_RF_TYPE					HS_ENTRY_ID + 15
+//#define MIB_HW_TX_POWER					HS_ENTRY_ID + 8
+
+//#define MIB_HW_TX_POWER_CCK				HS_ENTRY_ID + 9
+//#define MIB_HW_TX_POWER_OFDM				HS_ENTRY_ID + 10
+#define MIB_HW_ANT_DIVERSITY			HS_ENTRY_ID + 16
+#define MIB_HW_TX_ANT					HS_ENTRY_ID + 17
+#define MIB_HW_CS_THRESHOLD				HS_ENTRY_ID + 18
+#define MIB_HW_CCA_MODE					HS_ENTRY_ID + 19
+#define MIB_HW_PHY_TYPE					HS_ENTRY_ID + 20
+#define MIB_HW_LED_TYPE					HS_ENTRY_ID + 21
+
+//#endif // of WLAN_SUPPORT
+
+#define MIB_BYTE_TEST					HS_ENTRY_ID + 22
+#define MIB_WORD_TEST					HS_ENTRY_ID + 23
+#define MIB_DWORD_TEST					HS_ENTRY_ID + 24
+#define MIB_INTERGER_TEST1				HS_ENTRY_ID + 25
+#define MIB_INTERGER_TEST2				HS_ENTRY_ID + 26
+//#if WLAN_SUPPORT
+#define MIB_WIFI_SUPPORT				HS_ENTRY_ID + 27
+//#endif
+#define MIB_HW_SERIAL_NUMBER			HS_ENTRY_ID + 28
+
+#define MIB_HW_TX_POWER_CCK_A			HS_ENTRY_ID + 29
+#define MIB_HW_TX_POWER_CCK_B			HS_ENTRY_ID + 30
+#define MIB_HW_TX_POWER_HT40_1S_A		HS_ENTRY_ID + 31
+#define MIB_HW_TX_POWER_HT40_1S_B		HS_ENTRY_ID + 32
+#define MIB_HW_TX_POWER_HT40_2S			HS_ENTRY_ID + 33
+#define MIB_HW_TX_POWER_HT20			HS_ENTRY_ID + 34
+#define MIB_HW_TX_POWER_DIFF_OFDM		HS_ENTRY_ID + 35
+#define MIB_HW_11N_TSSI1				HS_ENTRY_ID + 36
+#define MIB_HW_11N_TSSI2				HS_ENTRY_ID + 37
+#define MIB_HW_11N_THER					HS_ENTRY_ID + 38
+#define MIB_HW_11N_THER2                HS_ENTRY_ID + 39
+#define MIB_HW_11N_PA_TYPE				HS_ENTRY_ID + 40
+#define MIB_HW_11N_TRSWPAPE_C9			HS_ENTRY_ID + 41
+#define MIB_HW_11N_TRSWPAPE_CC			HS_ENTRY_ID + 42
+#define MIB_HW_11N_TRSWITCH				HS_ENTRY_ID + 43
+
+#define MIB_HW_WLAN1_TX_POWER_CCK_A				HS_ENTRY_ID + 44
+#define MIB_HW_WLAN1_TX_POWER_CCK_B				HS_ENTRY_ID + 45
+#define MIB_HW_WLAN1_TX_POWER_HT40_1S_A			HS_ENTRY_ID + 46
+#define MIB_HW_WLAN1_TX_POWER_HT40_1S_B			HS_ENTRY_ID + 47
+#define MIB_HW_WLAN1_TX_POWER_HT40_2S			HS_ENTRY_ID + 48
+#define MIB_HW_WLAN1_TX_POWER_HT20				HS_ENTRY_ID + 49
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM			HS_ENTRY_ID + 50
+#define MIB_HW_WLAN1_11N_TSSI1					HS_ENTRY_ID + 51
+#define MIB_HW_WLAN1_11N_TSSI2					HS_ENTRY_ID + 52
+#define MIB_HW_WLAN1_11N_THER					HS_ENTRY_ID + 53
+#define MIB_HW_WLAN1_11N_THER2                  HS_ENTRY_ID + 54
+#define MIB_HW_WLAN1_11N_PA_TYPE				HS_ENTRY_ID + 55
+#define MIB_HW_WLAN1_REG_DOMAIN					HS_ENTRY_ID + 56
+#define MIB_HW_WLAN1_11N_TRSWPAPE_C9			HS_ENTRY_ID + 57
+#define MIB_HW_WLAN1_11N_TRSWPAPE_CC			HS_ENTRY_ID + 58
+#define MIB_HW_WLAN1_11N_TRSWITCH				HS_ENTRY_ID + 59
+
+#define MIB_HW_RF_XCAP							HS_ENTRY_ID + 60
+#define MIB_HW_RF_XCAP2							HS_ENTRY_ID + 61
+
+#define MIB_HW_WLAN1_RF_XCAP					HS_ENTRY_ID + 62
+#define MIB_HW_WLAN1_RF_XCAP2					HS_ENTRY_ID + 63
+
+#define MIB_HW_TARGET_PWR						HS_ENTRY_ID + 64
+#define MIB_HW_WLAN1_TARGET_PWR					HS_ENTRY_ID + 65
+
+#define MIB_HW_TX_POWER_5G_HT40_1S_A		HS_ENTRY_ID + 66
+#define MIB_HW_TX_POWER_5G_HT40_1S_B		HS_ENTRY_ID + 67
+#define MIB_HW_TX_POWER_DIFF_5G_HT40_2S		HS_ENTRY_ID + 68
+#define MIB_HW_TX_POWER_DIFF_5G_HT20		HS_ENTRY_ID + 69
+#define MIB_HW_TX_POWER_DIFF_5G_OFDM		HS_ENTRY_ID + 70
+
+#define MIB_HW_WLAN1_TX_POWER_5G_HT40_1S_A		HS_ENTRY_ID + 71
+#define MIB_HW_WLAN1_TX_POWER_5G_HT40_1S_B		HS_ENTRY_ID + 72
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_HT40_2S	HS_ENTRY_ID + 73
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_HT20		HS_ENTRY_ID + 74
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_OFDM		HS_ENTRY_ID + 75
+
+#define MIB_HW_TX_POWER_DIFF_20BW1S_OFDM1T_A		HS_ENTRY_ID + 76
+#define MIB_HW_TX_POWER_DIFF_40BW2S_20BW2S_A		HS_ENTRY_ID + 77
+#define MIB_HW_TX_POWER_DIFF_OFDM2T_CCK2T_A			HS_ENTRY_ID + 78
+#define MIB_HW_TX_POWER_DIFF_40BW3S_20BW3S_A		HS_ENTRY_ID + 79
+#define MIB_HW_TX_POWER_DIFF_OFDM3T_CCK3T_A			HS_ENTRY_ID + 80
+#define MIB_HW_TX_POWER_DIFF_40BW4S_20BW4S_A		HS_ENTRY_ID + 81
+#define MIB_HW_TX_POWER_DIFF_OFDM4T_CCK4T_A			HS_ENTRY_ID + 82
+
+#define MIB_HW_TX_POWER_DIFF_5G_20BW1S_OFDM1T_A		HS_ENTRY_ID + 83
+#define MIB_HW_TX_POWER_DIFF_5G_40BW2S_20BW2S_A		HS_ENTRY_ID + 84
+#define MIB_HW_TX_POWER_DIFF_5G_40BW3S_20BW3S_A		HS_ENTRY_ID + 85
+#define MIB_HW_TX_POWER_DIFF_5G_40BW4S_20BW4S_A		HS_ENTRY_ID + 86
+#define MIB_HW_TX_POWER_DIFF_5G_RSVD_OFDM4T_A		HS_ENTRY_ID + 87
+#define MIB_HW_TX_POWER_DIFF_5G_80BW1S_160BW1S_A	HS_ENTRY_ID + 88
+#define MIB_HW_TX_POWER_DIFF_5G_80BW2S_160BW2S_A	HS_ENTRY_ID + 89
+#define MIB_HW_TX_POWER_DIFF_5G_80BW3S_160BW3S_A	HS_ENTRY_ID + 90
+#define MIB_HW_TX_POWER_DIFF_5G_80BW4S_160BW4S_A	HS_ENTRY_ID + 91
+
+#define MIB_HW_TX_POWER_DIFF_20BW1S_OFDM1T_B		HS_ENTRY_ID + 92
+#define MIB_HW_TX_POWER_DIFF_40BW2S_20BW2S_B		HS_ENTRY_ID + 93
+#define MIB_HW_TX_POWER_DIFF_OFDM2T_CCK2T_B			HS_ENTRY_ID + 94
+#define MIB_HW_TX_POWER_DIFF_40BW3S_20BW3S_B		HS_ENTRY_ID + 95
+#define MIB_HW_TX_POWER_DIFF_OFDM3T_CCK3T_B			HS_ENTRY_ID + 96
+#define MIB_HW_TX_POWER_DIFF_40BW4S_20BW4S_B		HS_ENTRY_ID + 97
+#define MIB_HW_TX_POWER_DIFF_OFDM4T_CCK4T_B			HS_ENTRY_ID + 98
+
+#define MIB_HW_TX_POWER_DIFF_5G_20BW1S_OFDM1T_B		HS_ENTRY_ID + 99
+#define MIB_HW_TX_POWER_DIFF_5G_40BW2S_20BW2S_B		HS_ENTRY_ID + 100
+#define MIB_HW_TX_POWER_DIFF_5G_40BW3S_20BW3S_B		HS_ENTRY_ID + 101
+#define MIB_HW_TX_POWER_DIFF_5G_40BW4S_20BW4S_B		HS_ENTRY_ID + 102
+#define MIB_HW_TX_POWER_DIFF_5G_RSVD_OFDM4T_B		HS_ENTRY_ID + 103
+#define MIB_HW_TX_POWER_DIFF_5G_80BW1S_160BW1S_B	HS_ENTRY_ID + 104
+#define MIB_HW_TX_POWER_DIFF_5G_80BW2S_160BW2S_B	HS_ENTRY_ID + 105
+#define MIB_HW_TX_POWER_DIFF_5G_80BW3S_160BW3S_B	HS_ENTRY_ID + 106
+#define MIB_HW_TX_POWER_DIFF_5G_80BW4S_160BW4S_B	HS_ENTRY_ID + 107
+
+// add 8814 HW entry for antenna C/D
+#define MIB_HW_TX_POWER_CCK_C						HS_ENTRY_ID + 108
+#define MIB_HW_TX_POWER_CCK_D						HS_ENTRY_ID + 109
+#define MIB_HW_TX_POWER_HT40_1S_C					HS_ENTRY_ID + 110
+#define MIB_HW_TX_POWER_HT40_1S_D					HS_ENTRY_ID + 111
+#define MIB_HW_TX_POWER_5G_HT40_1S_C				HS_ENTRY_ID + 112
+#define MIB_HW_TX_POWER_5G_HT40_1S_D				HS_ENTRY_ID + 113
+
+#define MIB_HW_WLAN1_TX_POWER_CCK_C					HS_ENTRY_ID + 114
+#define MIB_HW_WLAN1_TX_POWER_CCK_D					HS_ENTRY_ID + 115
+#define MIB_HW_WLAN1_TX_POWER_HT40_1S_C				HS_ENTRY_ID + 116
+#define MIB_HW_WLAN1_TX_POWER_HT40_1S_D				HS_ENTRY_ID + 117
+#define MIB_HW_WLAN1_TX_POWER_5G_HT40_1S_C			HS_ENTRY_ID + 118
+#define MIB_HW_WLAN1_TX_POWER_5G_HT40_1S_D			HS_ENTRY_ID + 119
+
+#define MIB_HW_TX_POWER_DIFF_20BW1S_OFDM1T_C		HS_ENTRY_ID + 120
+#define MIB_HW_TX_POWER_DIFF_40BW2S_20BW2S_C		HS_ENTRY_ID + 121
+#define MIB_HW_TX_POWER_DIFF_OFDM2T_CCK2T_C			HS_ENTRY_ID + 122
+#define MIB_HW_TX_POWER_DIFF_40BW3S_20BW3S_C		HS_ENTRY_ID + 123
+#define MIB_HW_TX_POWER_DIFF_OFDM3T_CCK3T_C			HS_ENTRY_ID + 124
+#define MIB_HW_TX_POWER_DIFF_40BW4S_20BW4S_C		HS_ENTRY_ID + 125
+#define MIB_HW_TX_POWER_DIFF_OFDM4T_CCK4T_C			HS_ENTRY_ID + 126
+
+#define MIB_HW_TX_POWER_DIFF_5G_20BW1S_OFDM1T_C		HS_ENTRY_ID + 127
+#define MIB_HW_TX_POWER_DIFF_5G_40BW2S_20BW2S_C		HS_ENTRY_ID + 128
+#define MIB_HW_TX_POWER_DIFF_5G_40BW3S_20BW3S_C		HS_ENTRY_ID + 129
+#define MIB_HW_TX_POWER_DIFF_5G_40BW4S_20BW4S_C		HS_ENTRY_ID + 130
+#define MIB_HW_TX_POWER_DIFF_5G_RSVD_OFDM4T_C		HS_ENTRY_ID + 131
+#define MIB_HW_TX_POWER_DIFF_5G_80BW1S_160BW1S_C	HS_ENTRY_ID + 132
+#define MIB_HW_TX_POWER_DIFF_5G_80BW2S_160BW2S_C	HS_ENTRY_ID + 133
+#define MIB_HW_TX_POWER_DIFF_5G_80BW3S_160BW3S_C	HS_ENTRY_ID + 134
+#define MIB_HW_TX_POWER_DIFF_5G_80BW4S_160BW4S_C	HS_ENTRY_ID + 135
+
+#define MIB_HW_TX_POWER_DIFF_20BW1S_OFDM1T_D		HS_ENTRY_ID + 136
+#define MIB_HW_TX_POWER_DIFF_40BW2S_20BW2S_D		HS_ENTRY_ID + 137
+#define MIB_HW_TX_POWER_DIFF_OFDM2T_CCK2T_D			HS_ENTRY_ID + 138
+#define MIB_HW_TX_POWER_DIFF_40BW3S_20BW3S_D		HS_ENTRY_ID + 139
+#define MIB_HW_TX_POWER_DIFF_OFDM3T_CCK3T_D			HS_ENTRY_ID + 140
+#define MIB_HW_TX_POWER_DIFF_40BW4S_20BW4S_D		HS_ENTRY_ID + 141
+#define MIB_HW_TX_POWER_DIFF_OFDM4T_CCK4T_D			HS_ENTRY_ID + 142
+
+#define MIB_HW_TX_POWER_DIFF_5G_20BW1S_OFDM1T_D		HS_ENTRY_ID + 143
+#define MIB_HW_TX_POWER_DIFF_5G_40BW2S_20BW2S_D		HS_ENTRY_ID + 144
+#define MIB_HW_TX_POWER_DIFF_5G_40BW3S_20BW3S_D		HS_ENTRY_ID + 145
+#define MIB_HW_TX_POWER_DIFF_5G_40BW4S_20BW4S_D		HS_ENTRY_ID + 146
+#define MIB_HW_TX_POWER_DIFF_5G_RSVD_OFDM4T_D		HS_ENTRY_ID + 147
+#define MIB_HW_TX_POWER_DIFF_5G_80BW1S_160BW1S_D	HS_ENTRY_ID + 148
+#define MIB_HW_TX_POWER_DIFF_5G_80BW2S_160BW2S_D	HS_ENTRY_ID + 149
+#define MIB_HW_TX_POWER_DIFF_5G_80BW3S_160BW3S_D	HS_ENTRY_ID + 150
+#define MIB_HW_TX_POWER_DIFF_5G_80BW4S_160BW4S_D	HS_ENTRY_ID + 151
+
+// end 8814 HW entry for antenna C/D
+
+#define MIB_HW_WLAN1_TX_POWER_DIFF_20BW1S_OFDM1T_A		HS_ENTRY_ID + 152
+#define MIB_HW_WLAN1_TX_POWER_DIFF_40BW2S_20BW2S_A		HS_ENTRY_ID + 153
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM2T_CCK2T_A		HS_ENTRY_ID + 154
+#define MIB_HW_WLAN1_TX_POWER_DIFF_40BW3S_20BW3S_A		HS_ENTRY_ID + 155
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM3T_CCK3T_A		HS_ENTRY_ID + 156
+#define MIB_HW_WLAN1_TX_POWER_DIFF_40BW4S_20BW4S_A		HS_ENTRY_ID + 157
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM4T_CCK4T_A		HS_ENTRY_ID + 158
+
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_20BW1S_OFDM1T_A	HS_ENTRY_ID + 159
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_40BW2S_20BW2S_A	HS_ENTRY_ID + 160
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_40BW3S_20BW3S_A	HS_ENTRY_ID + 161
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_40BW4S_20BW4S_A	HS_ENTRY_ID + 162
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_RSVD_OFDM4T_A		HS_ENTRY_ID + 163
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW1S_160BW1S_A	HS_ENTRY_ID + 164
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW2S_160BW2S_A	HS_ENTRY_ID + 165
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW3S_160BW3S_A	HS_ENTRY_ID + 166
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW4S_160BW4S_A	HS_ENTRY_ID + 167
+
+#define MIB_HW_WLAN1_TX_POWER_DIFF_20BW1S_OFDM1T_B		HS_ENTRY_ID + 168
+#define MIB_HW_WLAN1_TX_POWER_DIFF_40BW2S_20BW2S_B		HS_ENTRY_ID + 169
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM2T_CCK2T_B		HS_ENTRY_ID + 170
+#define MIB_HW_WLAN1_TX_POWER_DIFF_40BW3S_20BW3S_B		HS_ENTRY_ID + 171
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM3T_CCK3T_B		HS_ENTRY_ID + 172
+#define MIB_HW_WLAN1_TX_POWER_DIFF_40BW4S_20BW4S_B		HS_ENTRY_ID + 173
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM4T_CCK4T_B		HS_ENTRY_ID + 174
+
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_20BW1S_OFDM1T_B	HS_ENTRY_ID + 175
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_40BW2S_20BW2S_B	HS_ENTRY_ID + 176
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_40BW3S_20BW3S_B	HS_ENTRY_ID + 177
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_40BW4S_20BW4S_B	HS_ENTRY_ID + 178
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_RSVD_OFDM4T_B		HS_ENTRY_ID + 179
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW1S_160BW1S_B	HS_ENTRY_ID + 180
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW2S_160BW2S_B	HS_ENTRY_ID + 181
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW3S_160BW3S_B	HS_ENTRY_ID + 182
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW4S_160BW4S_B	HS_ENTRY_ID + 183
+
+#define MIB_HW_WLAN1_TX_POWER_DIFF_20BW1S_OFDM1T_C		HS_ENTRY_ID + 184
+#define MIB_HW_WLAN1_TX_POWER_DIFF_40BW2S_20BW2S_C		HS_ENTRY_ID + 185
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM2T_CCK2T_C		HS_ENTRY_ID + 186
+#define MIB_HW_WLAN1_TX_POWER_DIFF_40BW3S_20BW3S_C		HS_ENTRY_ID + 187
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM3T_CCK3T_C		HS_ENTRY_ID + 188
+#define MIB_HW_WLAN1_TX_POWER_DIFF_40BW4S_20BW4S_C		HS_ENTRY_ID + 189
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM4T_CCK4T_C		HS_ENTRY_ID + 190
+
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_20BW1S_OFDM1T_C	HS_ENTRY_ID + 191
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_40BW2S_20BW2S_C	HS_ENTRY_ID + 192
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_40BW3S_20BW3S_C	HS_ENTRY_ID + 193
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_40BW4S_20BW4S_C	HS_ENTRY_ID + 194
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_RSVD_OFDM4T_C		HS_ENTRY_ID + 195
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW1S_160BW1S_C	HS_ENTRY_ID + 196
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW2S_160BW2S_C	HS_ENTRY_ID + 197
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW3S_160BW3S_C	HS_ENTRY_ID + 198
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW4S_160BW4S_C	HS_ENTRY_ID + 199
+
+#define MIB_HW_WLAN1_TX_POWER_DIFF_20BW1S_OFDM1T_D		HS_ENTRY_ID + 200
+#define MIB_HW_WLAN1_TX_POWER_DIFF_40BW2S_20BW2S_D		HS_ENTRY_ID + 201
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM2T_CCK2T_D		HS_ENTRY_ID + 202
+#define MIB_HW_WLAN1_TX_POWER_DIFF_40BW3S_20BW3S_D		HS_ENTRY_ID + 203
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM3T_CCK3T_D		HS_ENTRY_ID + 204
+#define MIB_HW_WLAN1_TX_POWER_DIFF_40BW4S_20BW4S_D		HS_ENTRY_ID + 205
+#define MIB_HW_WLAN1_TX_POWER_DIFF_OFDM4T_CCK4T_D		HS_ENTRY_ID + 206
+
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_20BW1S_OFDM1T_D	HS_ENTRY_ID + 207
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_40BW2S_20BW2S_D	HS_ENTRY_ID + 208
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_40BW3S_20BW3S_D	HS_ENTRY_ID + 209
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_40BW4S_20BW4S_D	HS_ENTRY_ID + 210
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_RSVD_OFDM4T_D		HS_ENTRY_ID + 211
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW1S_160BW1S_D	HS_ENTRY_ID + 212
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW2S_160BW2S_D	HS_ENTRY_ID + 213
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW3S_160BW3S_D	HS_ENTRY_ID + 214
+#define MIB_HW_WLAN1_TX_POWER_DIFF_5G_80BW4S_160BW4S_D	HS_ENTRY_ID + 215
+
+
+#define MIB_PON_MODE							HS_ENTRY_ID + 216
+#if defined(CONFIG_GPON_FEATURE) || defined(CONFIG_EPON_FEATURE)
+#define MIB_PON_LED_SPEC						HS_ENTRY_ID + 217
+#if defined(CONFIG_GPON_FEATURE)
+#define MIB_GPON_SN								HS_ENTRY_ID + 218
+#endif
+#endif
+
+#ifdef CONFIG_LAN_SDS_FEATURE
+#define MIB_LAN_SDS_MODE						HS_ENTRY_ID + 219
+#endif
+#ifdef CONFIG_LAN_SDS1_FEATURE
+#define MIB_LAN_SDS1_MODE						HS_ENTRY_ID + 220
+#endif
+
+#if defined(CONFIG_GPON_FEATURE) || defined(CONFIG_EPON_FEATURE)
+#define MIB_PON_VENDOR_ID						HS_ENTRY_ID + 221
+#endif
+
+#if defined(CONFIG_EPON_FEATURE)
+#define MIB_EPON_ONU_MODEL                      HS_ENTRY_ID + 222
+#define MIB_EPON_EXTONU_MODEL                   HS_ENTRY_ID + 223
+//#define MIB_EPON_HW_VERSION                     HS_ENTRY_ID + 221
+//#define MIB_EPON_SW_VERSION                     HS_ENTRY_ID + 222
+#define MIB_EPON_SILENT_MODE					HS_ENTRY_ID + 224
+#endif
+
+#define MIB_DEFAULT_USER_PASSWORD				HS_ENTRY_ID + 225
+
+#define MIB_HW_PROVINCE_NAME            		HS_ENTRY_ID + 226
+#define MIB_HW_PCBVER							HS_ENTRY_ID + 227
+#define MIB_HW_MODEL_NAME						HS_ENTRY_ID + 228
+
+#define MIB_HW_RF_DPK_DP_PATH_A_OK  HS_ENTRY_ID+230
+#define MIB_HW_RF_DPK_DP_PATH_B_OK  HS_ENTRY_ID+231
+#define MIB_HW_RF_DPK_PWSF_2G_A HS_ENTRY_ID+232
+#define MIB_HW_RF_DPK_PWSF_2G_B HS_ENTRY_ID+233
+#define MIB_HW_RF_DPK_LUT_2G_EVEN_A0 HS_ENTRY_ID+234
+#define MIB_HW_RF_DPK_LUT_2G_EVEN_A1 HS_ENTRY_ID+235
+#define MIB_HW_RF_DPK_LUT_2G_EVEN_A2 HS_ENTRY_ID+236
+#define MIB_HW_RF_DPK_LUT_2G_ODD_A0  HS_ENTRY_ID+237
+#define MIB_HW_RF_DPK_LUT_2G_ODD_A1  HS_ENTRY_ID+238
+#define MIB_HW_RF_DPK_LUT_2G_ODD_A2  HS_ENTRY_ID+239
+#define MIB_HW_RF_DPK_LUT_2G_EVEN_B0  HS_ENTRY_ID+240
+#define MIB_HW_RF_DPK_LUT_2G_EVEN_B1  HS_ENTRY_ID+241
+#define MIB_HW_RF_DPK_LUT_2G_EVEN_B2  HS_ENTRY_ID+242
+#define MIB_HW_RF_DPK_LUT_2G_ODD_B0 HS_ENTRY_ID+243
+#define MIB_HW_RF_DPK_LUT_2G_ODD_B1 HS_ENTRY_ID+244
+#define MIB_HW_RF_DPK_LUT_2G_ODD_B2 HS_ENTRY_ID+245
+
+#define MIB_DEFAULT_WLAN_SSID					HS_ENTRY_ID + 246
+#define MIB_DEFAULT_WLAN_WPAKEY					HS_ENTRY_ID + 247
+#define MIB_HW_CWMP_DEV_TYPE			 		HS_ENTRY_ID + 248
+#ifdef CONFIG_RTK_OMCI_V1
+#define MIB_OMCI_WAN_QOS_QUEUE_NUM				HS_ENTRY_ID + 249
+#endif
+
+#define MIB_HW_WLAN0_COUNTRYCODE		HS_ENTRY_ID + 250
+#define MIB_HW_WLAN0_COUNTRYSTR                HS_ENTRY_ID + 251
+#define MIB_HW_WLAN1_COUNTRYCODE                HS_ENTRY_ID + 252
+#define MIB_HW_WLAN1_COUNTRYSTR                HS_ENTRY_ID + 253
+
+#define MIB_VENDOR_SPEC_INFO					HS_ENTRY_ID + 254
+
+#define MIB_PON_SPEED							HS_ENTRY_ID + 255
+#define MIB_HW_TELNET_USER						HS_ENTRY_ID + 256
+#define MIB_HW_TELNET_PASSWD					HS_ENTRY_ID + 257
+#define MIB_HW_E8BDUSER_NAME					HS_ENTRY_ID + 258
+#define MIB_HW_E8BDUSER_PASSWORD				HS_ENTRY_ID + 259
+
+#define CHAIN_ENTRY_TBL_ID				3000
+
+#define MIB_IP_PORT_FILTER_TBL				CHAIN_ENTRY_TBL_ID + 1
+#define MIB_MAC_FILTER_TBL				CHAIN_ENTRY_TBL_ID + 2
+#define MIB_PORT_FW_TBL					CHAIN_ENTRY_TBL_ID + 3
+#define MIB_ATM_VC_TBL					CHAIN_ENTRY_TBL_ID + 4
+#define MIB_IP_ROUTE_TBL				CHAIN_ENTRY_TBL_ID + 5
+#define MIB_ACL_IP_TBL					CHAIN_ENTRY_TBL_ID + 6
+#ifdef WLAN_SUPPORT
+#ifdef WLAN_ACL
+//#define MIB_WLAN_AC_TBL					CHAIN_ENTRY_TBL_ID + 7
+#endif
+#endif
+
+#define MIB_SW_PORT_TBL					CHAIN_ENTRY_TBL_ID + 8
+#define MIB_VLAN_TBL					CHAIN_ENTRY_TBL_ID + 9
+#define MIB_IP_QOS_TBL					CHAIN_ENTRY_TBL_ID + 10
+#define MIB_ACC_TBL					CHAIN_ENTRY_TBL_ID + 11
+
+#ifdef PORT_TRIGGERING
+#define MIB_PORT_TRG_TBL				CHAIN_ENTRY_TBL_ID + 13
+#endif
+
+#ifdef NATIP_FORWARDING
+#define MIB_IP_FW_TBL					CHAIN_ENTRY_TBL_ID + 14
+#endif
+#ifdef URL_BLOCKING_SUPPORT
+#define MIB_URL_FQDN_TBL				CHAIN_ENTRY_TBL_ID + 15
+#endif
+#ifdef _CWMP_MIB_ /*jiunming, mib for cwmp-tr069*/
+#ifdef WLAN_SUPPORT
+#define CWMP_PSK_TBL					CHAIN_ENTRY_TBL_ID + 16
+#endif
+#endif /*_CWMP_MIB_*/
+#define MIB_MAC_BASE_DHCP_TBL				CHAIN_ENTRY_TBL_ID + 17
+#define MIB_AUTO_PVC_SEARCH_TBL				CHAIN_ENTRY_TBL_ID + 18	// for auto-pvc-search
+#ifdef CONFIG_USER_DDNS
+#define MIB_DDNS_TBL					CHAIN_ENTRY_TBL_ID + 19
+#endif
+
+#define MIB_PPPOE_SESSION_TBL				CHAIN_ENTRY_TBL_ID + 21	// Jenny, add for PPPoE session information
+
+#ifdef DOMAIN_BLOCKING_SUPPORT
+#define MIB_DOMAIN_BLOCKING_TBL				CHAIN_ENTRY_TBL_ID + 22
+#endif
+
+#ifdef URL_BLOCKING_SUPPORT
+#define MIB_KEYWD_FILTER_TBL				CHAIN_ENTRY_TBL_ID + 23
+#endif
+
+#define MIB_RIP_TBL					CHAIN_ENTRY_TBL_ID + 24
+
+//#define MIB_MBSSIB_TBL					CHAIN_ENTRY_TBL_ID + 25
+#define MIB_MBSSIB_WEP_TBL				CHAIN_ENTRY_TBL_ID + 26
+
+#ifdef ACCOUNT_CONFIG
+#define MIB_ACCOUNT_CONFIG_TBL				CHAIN_ENTRY_TBL_ID + 27	// Jenny, user account table
+#endif
+
+#ifdef VIRTUAL_SERVER_SUPPORT
+#define MIB_VIRTUAL_SVR_TBL CHAIN_ENTRY_TBL_ID + 28
+#endif
+
+//ql_xu add:
+#ifdef MAC_ACL
+#define MIB_ACL_MAC_TBL				CHAIN_ENTRY_TBL_ID + 29
+#endif
+#ifdef NAT_CONN_LIMIT
+#define MIB_CONN_LIMIT_TBL			CHAIN_ENTRY_TBL_ID + 30
+#endif
+
+#ifdef URL_ALLOWING_SUPPORT
+#define MIB_URL_ALLOW_FQDN_TBL            	CHAIN_ENTRY_TBL_ID + 31
+#endif
+
+#ifdef CONFIG_USER_ZEBRA_OSPFD_OSPFD
+#define MIB_OSPF_TBL				CHAIN_ENTRY_TBL_ID + 32
+#endif
+
+#ifdef  QOS_SPEED_LIMIT_SUPPORT
+#define MIB_QOS_SPEED_LIMIT	   		CHAIN_ENTRY_TBL_ID + 33
+#endif
+
+#ifdef LAYER7_FILTER_SUPPORT
+#define MIB_LAYER7_FILTER_TBL     		CHAIN_ENTRY_TBL_ID + 34
+#endif
+
+/*+++++add by Jack for VoIP project 20/03/07+++++*/
+#ifdef VOIP_SUPPORT
+#define MIB_VOIP_CFG_TBL			CHAIN_ENTRY_TBL_ID+35
+#endif // VOIP_SUPPORT
+/*-----end-----*/
+
+#ifdef PARENTAL_CTRL
+#define MIB_PARENTAL_CTRL_TBL			CHAIN_ENTRY_TBL_ID+36
+#endif
+
+#ifdef TCP_UDP_CONN_LIMIT
+#define MIB_TCP_UDP_CONN_LIMIT_TBL		CHAIN_ENTRY_TBL_ID+37
+#endif //TCP_UDP_CONN_LIMIT
+
+
+#ifdef WEB_REDIRECT_BY_MAC
+#define MIB_WEB_REDIR_BY_MAC_TBL		CHAIN_ENTRY_TBL_ID+38
+#endif
+#define MULTI_ADDRESS_MAPPING_LIMIT_TBL		CHAIN_ENTRY_TBL_ID+39
+#define MIB_PFW_ADVANCE_TBL			CHAIN_ENTRY_TBL_ID+40
+
+//ql 20081119 for IP QoS traffic shaping
+#ifdef CONFIG_USER_IP_QOS
+#define MIB_IP_QOS_TC_TBL			CHAIN_ENTRY_TBL_ID+41
+#endif
+
+/*ping_zhang:20080919 START:add for new telefonica tr069 request: dhcp option*/
+#ifdef _PRMT_X_TELEFONICA_ES_DHCPOPTION_
+#define MIB_DHCP_SERVER_OPTION_TBL		CHAIN_ENTRY_TBL_ID+42
+#define MIB_DHCP_CLIENT_OPTION_TBL        	CHAIN_ENTRY_TBL_ID+43
+#define MIB_DHCPS_SERVING_POOL_TBL		CHAIN_ENTRY_TBL_ID+44
+#endif
+/*ping_zhang:20080919 END*/
+#define MIB_IP_QOS_QUEUE_TBL			CHAIN_ENTRY_TBL_ID+45
+
+#ifdef WLAN_QoS
+#define MIB_WLAN_QOS_AP_TBL		CHAIN_ENTRY_TBL_ID+46
+#define MIB_WLAN_QOS_STA_TBL		CHAIN_ENTRY_TBL_ID+47
+#endif
+
+#ifdef _SUPPORT_CAPTIVEPORTAL_PROFILE_
+#define CWMP_CAPTIVEPORTAL_ALLOWED_LIST		CHAIN_ENTRY_TBL_ID+48
+#endif
+
+#ifdef CONFIG_USER_PPTP_CLIENT_PPTP
+#define MIB_PPTP_TBL					CHAIN_ENTRY_TBL_ID+49
+#endif //end of CONFIG_USER_PPTP_CLIENT_PPTP
+
+#ifdef CONFIG_USER_L2TPD_L2TPD
+#define MIB_L2TP_TBL					CHAIN_ENTRY_TBL_ID+50
+#endif //end of CONFIG_USER_L2TPD_L2TPD
+
+#ifdef SUPPORT_DHCP_RESERVED_IPADDR
+#define MIB_DHCP_RESERVED_IPADDR_TBL	CHAIN_ENTRY_TBL_ID+51
+#endif //SUPPORT_DHCP_RESERVED_IPADDR
+
+#ifdef CONFIG_USER_PPPOMODEM
+#define MIB_WAN_3G_TBL			CHAIN_ENTRY_TBL_ID+52
+#endif //CONFIG_USER_PPPOMODEM
+
+#ifdef CONFIG_USER_DHCPV6_ISC_DHCP411
+#define MIB_DHCPV6S_NAME_SERVER_TBL		CHAIN_ENTRY_TBL_ID+53
+#define MIB_DHCPV6S_DOMAIN_SEARCH_TBL		CHAIN_ENTRY_TBL_ID+54
+#endif
+
+#ifdef CONFIG_NET_IPIP
+#define MIB_IPIP_TBL				CHAIN_ENTRY_TBL_ID+57
+#endif//end of CONFIG_NET_IPIP
+
+#if defined(CONFIG_USER_PPTPD_PPTPD) || defined(CONFIG_USER_L2TPD_LNS)
+#define MIB_VPN_SERVER_TBL			CHAIN_ENTRY_TBL_ID+58
+#define MIB_VPN_ACCOUNT_TBL			CHAIN_ENTRY_TBL_ID+59
+#endif
+
+#ifdef CONFIG_XFRM
+#define MIB_IPSEC_TBL				CHAIN_ENTRY_TBL_ID+60
+#endif
+
+#ifdef CONFIG_IPV6
+#define MIB_V6_IP_PORT_FILTER_TBL	CHAIN_ENTRY_TBL_ID+61
+#define MIB_IPV6_ROUTE_TBL			CHAIN_ENTRY_TBL_ID+62
+#endif
+
+#ifdef CONFIG_EPON_FEATURE
+#define MIB_EPON_LLID_TBL			CHAIN_ENTRY_TBL_ID+63
+#endif
+
+#ifdef _CWMP_MIB_
+#ifdef _PRMT_X_CT_COM_ALARM_MONITOR_
+#define CWMP_CT_ALARM_TBL			CHAIN_ENTRY_TBL_ID + 64
+#define CWMP_CT_MONITOR_TBL			CHAIN_ENTRY_TBL_ID + 65
+#endif	//_PRMT_X_CT_COM_ALARM_MONITOR_
+#ifdef _PRMT_X_CT_COM_PING_
+#define CWMP_CT_PING_TBL			CHAIN_ENTRY_TBL_ID + 66
+#endif	//_PRMT_X_CT_COM_ALARM_MONITOR_
+#endif	//_CWMP_MIB_
+
+// Magician: E8B security
+#define MIB_MAC_FILTER_EBTABLES_TBL		CHAIN_ENTRY_TBL_ID+67
+#define MIB_MAC_FILTER_ROUTER_TBL			CHAIN_ENTRY_TBL_ID+68
+// End E8B
+#define MIB_IP_QOS_APP_TBL			CHAIN_ENTRY_TBL_ID+70
+
+#define MIB_PORT_BINDING_TBL		CHAIN_ENTRY_TBL_ID+71
+
+#ifdef CONFIG_USER_RTK_LBD
+#define MIB_LBD_VLAN_TBL			CHAIN_ENTRY_TBL_ID+72
+#endif
+
+#ifdef CONFIG_USER_CWMP_UPNP_DM
+#define UPNPDM_CFG_PROFILE_TBL				CHAIN_ENTRY_TBL_ID+73
+#define UPNPDM_CFG_TEMP_AP_INTERNET_TBL 	CHAIN_ENTRY_TBL_ID+74
+#define UPNPDM_CFG_TEMP_AP_IPTV_TBL 		CHAIN_ENTRY_TBL_ID+75
+#define UPNPDM_CFG_TEMP_AP_VOIP_TBL 		CHAIN_ENTRY_TBL_ID+76
+#define UPNPDM_FILE_PROFILE_TBL			CHAIN_ENTRY_TBL_ID+77
+#endif
+
+#ifdef CONFIG_MULTI_FTPD_ACCOUNT
+#define MIB_FTP_ACCOUNT_TBL				CHAIN_ENTRY_TBL_ID+78
+#endif
+#ifdef CONFIG_MULTI_SMBD_ACCOUNT
+#define MIB_SMBD_ACCOUNT_TBL			CHAIN_ENTRY_TBL_ID+79
+#endif
+
+#ifdef WLAN_SUPPORT
+#ifdef WIFI_TIMER_SCHEDULE
+#define MIB_WIFI_TIMER_TBL			CHAIN_ENTRY_TBL_ID+80
+#define MIB_WIFI_TIMER_EX_TBL		CHAIN_ENTRY_TBL_ID+81
+#endif
+#endif
+
+#ifdef CONFIG_LED_INDICATOR_TIMER
+#define MIB_LED_INDICATOR_TIMER_TBL				CHAIN_ENTRY_TBL_ID+82
+#endif
+#ifdef CONFIG_RG_SLEEPMODE_TIMER
+#define MIB_SLEEP_MODE_SCHED_TBL				CHAIN_ENTRY_TBL_ID+83
+#endif
+
+#ifdef CTC_DNS_SPEED_LIMIT
+#define DNS_LIMIT_DOMAIN_TBL				CHAIN_ENTRY_TBL_ID + 84
+#define DNS_LIMIT_DEV_INFO_TBL				CHAIN_ENTRY_TBL_ID + 85
+#endif
+
+#ifdef SUPPORT_WEB_REDIRECT
+//siyuan 2016-1-11 save web redirect rule
+#define MIB_REDIRECT_URL_LIST 				CHAIN_ENTRY_TBL_ID + 86
+#define MIB_REDIRECT_WHITE_LIST 			CHAIN_ENTRY_TBL_ID + 87
+#endif
+
+#ifdef SUPPORT_ACCESS_RIGHT
+#define MIB_LAN_HOST_ACCESS_RIGHT_TBL		CHAIN_ENTRY_TBL_ID+88
+#endif
+#ifdef CONFIG_USER_LAN_BANDWIDTH_CONTROL
+#define MIB_LAN_HOST_BANDWIDTH_TBL			CHAIN_ENTRY_TBL_ID+89
+#endif
+#ifdef CONFIG_USER_LANNETINFO
+#define MIB_LAN_DEV_NAME_TBL				CHAIN_ENTRY_TBL_ID+90
+#endif
+#ifdef CONFIG_USER_L2TPD_L2TPD
+#define MIB_L2TP_ROUTE_TBL					CHAIN_ENTRY_TBL_ID + 91
+#endif
+#ifdef CTC_DNS_TUNNEL
+#define MIB_DNS_TUNNEL_TBL					CHAIN_ENTRY_TBL_ID + 92
+#endif
+
+#ifdef CONFIG_SUPPORT_AUTO_DIAG
+#define MIB_AUTO_DIAG_PARAM_TBL					CHAIN_ENTRY_TBL_ID + 93
+#define CWMP_CT_MONITOR_COLLECTOR_TBL				CHAIN_ENTRY_TBL_ID + 94
+#endif
+
+#ifdef CONFIG_USER_PPTP_CLIENT_PPTP
+#define MIB_PPTP_ROUTE_TBL					CHAIN_ENTRY_TBL_ID + 95
+#endif
+
+#define MIB_SIMU_ATM_VC_TBL					CHAIN_ENTRY_TBL_ID + 99
+
+#define MIB_PORT_BANDWIDTH_TBL				CHAIN_ENTRY_TBL_ID + 100
+
+#define MIB_VSFTP_ACCOUNT_TBL				CHAIN_ENTRY_TBL_ID+101
+#define	MIB_DBUS_LANHOST_TBL				CHAIN_ENTRY_TBL_ID+102
+#define MIB_INTERNET_GATEWAY_DEVICE_TBL		CHAIN_ENTRY_TBL_ID+103
+#define MIB_USB_INFO_TBL					CHAIN_ENTRY_TBL_ID+104
+#define MIB_IN_COMMING_TBL					CHAIN_ENTRY_TBL_ID+105
+#define MIB_STBBIND_MAC_TBL CHAIN_ENTRY_TBL_ID + 106
+
+#ifdef CONFIG_USER_RTK_OMD
+#define MIB_CPUMEM_INFO_TBL					CHAIN_ENTRY_TBL_ID+107
+#define MIB_PROCESS_EXCEP_TBL					CHAIN_ENTRY_TBL_ID+108
+#endif
+#if defined(CONFIG_USER_JAMVM) && defined (CONFIG_APACHE_FELIX_FRAMEWORK)
+#define MIB_OSGI_BUNDLE_TBL			CHAIN_ENTRY_TBL_ID+109
+#endif
+
+#define MIB_L2FILTER_TBL					CHAIN_ENTRY_TBL_ID+110
+#ifdef CONFIG_CMCC_FORWARD_RULE_SUPPORT
+#define MIB_CMCC_FORDWARD_RULE_TBL			CHAIN_ENTRY_TBL_ID+111
+#endif
+
+#ifdef _PRMT_X_CMCC_LANINTERFACES_
+#define MIB_ELAN_CONF_TBL			CHAIN_ENTRY_TBL_ID+112
+#endif
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define MIB_MIRROR_RULE_TBL			CHAIN_ENTRY_TBL_ID+113
+#endif
+
+#ifdef _PRMT_X_CMCC_WLANFORGUEST_
+#define MIB_WLAN_FORGUEST_TBL			CHAIN_ENTRY_TBL_ID+114
+#endif
+
+#ifdef CONFIG_APACHE_FELIX_FRAMEWORK
+#define MIB_OSGI_PERMISSION_TBL			CHAIN_ENTRY_TBL_ID+115
+#define MIB_OSGI_PERMISSION_API_TBL		CHAIN_ENTRY_TBL_ID+116
+#endif
+
+#ifdef CONFIG_CMCC_TRAFFIC_PROCESS_RULE_SUPPORT
+#define MIB_CMCC_TRAFFIC_PROCESS_RULE_TBL			CHAIN_ENTRY_TBL_ID+117
+#endif
+
+#ifdef _PRMT_X_CMCC_WLANSHARE_
+#define MIB_WLAN_SHARE_TBL				CHAIN_ENTRY_TBL_ID+118
+#endif
+
+#ifdef _PRMT_X_CT_COM_DATA_SPEED_LIMIT_
+#define MIB_DATA_SPEED_LIMIT_UP_IF_TBL		CHAIN_ENTRY_TBL_ID+119
+#define MIB_DATA_SPEED_LIMIT_DOWN_IF_TBL	CHAIN_ENTRY_TBL_ID+120
+#define MIB_DATA_SPEED_LIMIT_UP_VLAN_TBL	CHAIN_ENTRY_TBL_ID+121
+#define MIB_DATA_SPEED_LIMIT_DOWN_VLAN_TBL	CHAIN_ENTRY_TBL_ID+122
+#define MIB_DATA_SPEED_LIMIT_UP_IP_TBL		CHAIN_ENTRY_TBL_ID+123
+#define MIB_DATA_SPEED_LIMIT_DOWN_IP_TBL	CHAIN_ENTRY_TBL_ID+124
+#endif
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define MIB_CMCC_OSGI_PLUGIN_TBL CHAIN_ENTRY_TBL_ID + 125
+#endif
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define MIB_IP_QOS_CLASSFICATION_TBL					CHAIN_ENTRY_TBL_ID+126
+#define MIB_IP_QOS_CLASSFICATIONTYPE_TBL				CHAIN_ENTRY_TBL_ID+127
+#endif
+
+#ifdef CONFIG_USER_BEHAVIOR_ANALYSIS
+#define MIB_BA_CLASS_TBL					CHAIN_ENTRY_TBL_ID + 128
+#define MIB_BA_APP_TBL					CHAIN_ENTRY_TBL_ID + 129
+#define MIB_BA_FLOW_TBL					CHAIN_ENTRY_TBL_ID + 130
+#define MIB_NETWORK_PERFORMANCE_TBL	CHAIN_ENTRY_TBL_ID + 131
+#endif
+
+#ifdef CONFIG_CMCC_MULTICAST_CROSS_VLAN_SUPPORT
+#define MIB_MULTICAST_CROSS_VLAN_TBL	CHAIN_ENTRY_TBL_ID+132
+#endif
+
+#if (defined(CONFIG_CMCC) || defined(CONFIG_CU)) && defined(CONFIG_IPV6)
+#define MIB_IPV6_BINDING			CHAIN_ENTRY_TBL_ID+133
+#endif
+
+#ifdef SUPPORT_URL_FILTER
+#define MIB_URL_FILTER_TBL				CHAIN_ENTRY_TBL_ID + 134
+#endif
+
+#ifdef SUPPORT_DNS_FILTER
+#define MIB_DNS_FILTER_TBL				CHAIN_ENTRY_TBL_ID + 135
+#endif
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define MIB_CMCC_TRAFFICMONITOR_RULE_TBL	CHAIN_ENTRY_TBL_ID+136
+#endif
+
+#ifdef _PRMT_X_CMCC_SECURITY_
+#define MIB_PARENTALCTRL_MAC_TBL CHAIN_ENTRY_TBL_ID + 137
+#define MIB_PARENTALCTRL_TEMPLATES_TBL CHAIN_ENTRY_TBL_ID + 138
+#define MIB_PARENTALCTRL_TEMPLATES_DURATION_TBL CHAIN_ENTRY_TBL_ID + 139
+#define MIB_PARENTALCTRL_TEMPLATES_URLFILTER_TBL CHAIN_ENTRY_TBL_ID + 140
+#endif
+#ifdef _PRMT_X_WLANFORISP_
+#define MIB_WLANFORISP_TBL	CHAIN_ENTRY_TBL_ID + 141
+#endif
+#ifdef CONFIG_CT_AWIFI_JITUAN_FEATURE
+#define MIB_DHCPS_SERVING_POOL_AWIFI_TBL		CHAIN_ENTRY_TBL_ID+142
+#endif
+#ifdef WLAN_VSIE_SERVICE
+#define MIB_BEACON_TXVSIE_TBL		CHAIN_ENTRY_TBL_ID+143
+#define MIB_PROBE_RXVSIE_TBL		CHAIN_ENTRY_TBL_ID+144
+#endif
+
+#ifdef _PRMT_C_CU_FTPSERVICE_
+#define CONFIG_FTP_SERVER   CHAIN_ENTRY_TBL_ID+145
+#define CONFIG_FTP_CLIENT    CHAIN_ENTRY_TBL_ID+146
+#endif
+
+#ifdef CONFIG_USER_CUMANAGEDEAMON
+#define MIB_OSGI_PLUGIN_API_TBL CHAIN_ENTRY_TBL_ID + 147
+#endif
+
+#ifdef _PRMT_C_CU_USERACCOUNT_
+#define CONFIG_USER_ACCOUNT CHAIN_ENTRY_TBL_ID + 148
+#define CONFIG_USER_ACCOUNT_TIME CHAIN_ENTRY_TBL_ID + 149
+#define CONFIG_USER_ACCOUNT_MAC CHAIN_ENTRY_TBL_ID + 150
+#define CONFIG_USER_ACCOUNT_IP CHAIN_ENTRY_TBL_ID + 151
+#define CONFIG_USER_ACCOUNT_URL_WHITE CHAIN_ENTRY_TBL_ID + 152
+#define CONFIG_USER_ACCOUNT_URL_BLACK CHAIN_ENTRY_TBL_ID + 153
+#endif
+
+#define	WLAN_CHAIN_ENTRY_ID			CHAIN_ENTRY_TBL_ID+200
+#define DUAL_WLAN_CHAIN_START_ID	WLAN_CHAIN_ENTRY_ID
+
+#define MIB_MBSSIB_TBL				DUAL_WLAN_CHAIN_START_ID+1
+#define MIB_WLAN1_MBSSIB_TBL		DUAL_WLAN_CHAIN_START_ID+2
+
+#ifdef WLAN_SUPPORT
+#ifdef WLAN_ACL
+#define MIB_WLAN_AC_TBL				DUAL_WLAN_CHAIN_START_ID+3
+#define MIB_WLAN1_AC_TBL			DUAL_WLAN_CHAIN_START_ID+4
+#endif
+#endif
+
+#ifdef WLAN_WDS
+#define MIB_WDS_TBL   			    DUAL_WLAN_CHAIN_START_ID+5
+#define MIB_WLAN1_WDS_TBL	   		DUAL_WLAN_CHAIN_START_ID+6
+#endif
+
+#ifdef WLAN_11R
+#define MIB_WLAN_FTKH_TBL			DUAL_WLAN_CHAIN_START_ID+7
+#define MIB_WLAN1_FTKH_TBL			DUAL_WLAN_CHAIN_START_ID+8
+#endif
+
+#define DUAL_WLAN_CHAIN_END_ID		DUAL_WLAN_CHAIN_START_ID+9
+
+/*************************************************************************************/
+/*** Do "NOT" add MIB TABLE after this line, please add before WLAN_CHAIN_ENTRY_ID ***/
+/*************************************************************************************/
+#define MIB_CHAIN_TBL_END			DUAL_WLAN_CHAIN_END_ID
+
+#ifdef _CWMP_MIB_ /*jiunming, mib for cwmp-tr069*/
+#define CWMP_ID						4000
+#define CWMP_PROVISIONINGCODE				CWMP_ID + 1
+#define CWMP_ACS_URL					CWMP_ID + 2
+#define CWMP_ACS_USERNAME				CWMP_ID + 3
+#define CWMP_ACS_PASSWORD				CWMP_ID + 4
+#define CWMP_INFORM_ENABLE				CWMP_ID + 5
+#define CWMP_INFORM_INTERVAL				CWMP_ID + 6
+#define CWMP_INFORM_TIME				CWMP_ID + 7
+#define CWMP_CONREQ_USERNAME				CWMP_ID + 8
+#define CWMP_CONREQ_PASSWORD				CWMP_ID + 9
+#define CWMP_ACS_UPGRADESMANAGED			CWMP_ID + 10
+#define CWMP_LAN_CONFIGPASSWD				CWMP_ID + 11
+#define CWMP_SERIALNUMBER				CWMP_ID + 12
+
+#define CWMP_DHCP_SERVERCONF				CWMP_ID + 13
+#define CWMP_LAN_IPIFENABLE				CWMP_ID + 14
+#define CWMP_LAN_ETHIFENABLE				CWMP_ID + 15
+
+#define CWMP_WLAN_BASICENCRY				CWMP_ID + 16
+
+#define CWMP_DL_COMMANDKEY				CWMP_ID + 18
+#define CWMP_DL_STARTTIME				CWMP_ID + 19
+#define CWMP_DL_COMPLETETIME				CWMP_ID + 20
+#define CWMP_DL_FAULTCODE				CWMP_ID + 21
+
+#define CWMP_INFORM_EVENTCODE				CWMP_ID + 22
+#define CWMP_RB_COMMANDKEY				CWMP_ID + 23
+#define CWMP_ACS_PARAMETERKEY				CWMP_ID + 24
+
+#define CWMP_CERT_PASSWORD				CWMP_ID + 25
+
+#define CWMP_FLAG					CWMP_ID + 26
+#define CWMP_SI_COMMANDKEY				CWMP_ID + 27	/*ScheduleInform's commandkey*/
+
+#ifdef _PRMT_USERINTERFACE_						/*InternetGatewayDevice.UserInterface.*/
+#define UIF_PW_REQUIRED					CWMP_ID + 28 	/*PasswordRequired*/
+#define UIF_PW_USER_SEL					CWMP_ID + 29	/*PasswordUserSelectable*/
+#define UIF_UPGRADE					CWMP_ID + 30	/*UpgradeAvailable*/
+#define UIF_WARRANTYDATE				CWMP_ID + 31	/*WarrantyDate*/
+#define UIF_AUTOUPDATESERVER				CWMP_ID + 32	/*AutoUpdateServer*/
+#define UIF_USERUPDATESERVER				CWMP_ID + 33	/*UserUpdateServer*/
+#endif /*_PRMT_USERINTERFACE_*/
+
+#ifdef _PRMT_X_CT_COM_IPTV_
+#define CWMP_CT_IPTV_IGMPENABLE				CWMP_ID + 34
+#define CWMP_CT_IPTV_STBNUMBER				CWMP_ID + 35
+#endif
+
+#ifdef _PRMT_X_CT_COM_RECON_
+#define CWMP_CT_RECON_ENABLE				CWMP_ID + 36
+#endif //_PRMT_X_CT_COM_RECON_
+
+#ifdef _PRMT_X_CT_COM_MWBAND_
+#define CWMP_CT_MWBAND_MODE				CWMP_ID + 37
+#define CWMP_CT_MWBAND_NUMBER				CWMP_ID + 38
+#define CWMP_CT_MWBAND_STB_ENABLE			CWMP_ID + 39
+#define CWMP_CT_MWBAND_STB_NUM				CWMP_ID + 40
+#define CWMP_CT_MWBAND_CMR_ENABLE			CWMP_ID + 41
+#define CWMP_CT_MWBAND_CMR_NUM				CWMP_ID + 42
+#define CWMP_CT_MWBAND_PC_ENABLE			CWMP_ID + 43
+#define CWMP_CT_MWBAND_PC_NUM				CWMP_ID + 44
+#define CWMP_CT_MWBAND_PHN_ENABLE			CWMP_ID + 45
+#define CWMP_CT_MWBAND_PHN_NUM				CWMP_ID + 46
+#endif /*_PRMT_X_CT_COM_MWBAND_*/
+
+#ifdef _PRMT_X_CT_COM_PORTALMNT_
+#define CWMP_CT_PM_ENABLE				CWMP_ID + 47
+#define CWMP_CT_PM_URL4PC				CWMP_ID + 48
+#define CWMP_CT_PM_URL4STB				CWMP_ID + 49
+#define CWMP_CT_PM_URL4MOBILE				CWMP_ID + 50
+#endif /*_PRMT_X_CT_COM_PORTALMNT_*/
+
+
+#if defined( _PRMT_X_CT_COM_DHCP_)||defined(IP_BASED_CLIENT_TYPE)
+#define CWMP_CT_STB_MINADDR				CWMP_ID + 51
+#define CWMP_CT_STB_MAXADDR				CWMP_ID + 52
+#define CWMP_CT_PHN_MINADDR				CWMP_ID + 53
+#define CWMP_CT_PHN_MAXADDR				CWMP_ID + 54
+#define CWMP_CT_CMR_MINADDR				CWMP_ID + 55
+#define CWMP_CT_CMR_MAXADDR				CWMP_ID + 56
+#define CWMP_CT_PC_MINADDR				CWMP_ID + 57
+#define CWMP_CT_PC_MAXADDR				CWMP_ID + 58
+#define CWMP_CT_HGW_MINADDR             		CWMP_ID + 59
+#define CWMP_CT_HGW_MAXADDR             		CWMP_ID + 60
+#endif //_PRMT_X_CT_COM_DHCP_
+
+#ifdef _PRMT_X_CT_COM_DHCP_
+#define CWMP_CT_DHCPS_CHECK_OPT_60			CWMP_ID + 61
+#define CWMP_CT_DHCPS_SEND_OPT_125			CWMP_ID + 62
+#define CWMP_CT_DHCP6S_CHECK_OPT_16			CWMP_ID + 63
+#define CWMP_CT_DHCP6S_SEND_OPT_17			CWMP_ID + 64
+#endif
+
+#define CWMP_ACS_KICKURL				CWMP_ID + 74
+#define CWMP_ACS_DOWNLOADURL				CWMP_ID + 75
+#define CWMP_CONREQ_PORT				CWMP_ID + 76 /*port for connection request*/
+#define CWMP_CONREQ_PATH				CWMP_ID + 77 /*path for connection request*/
+#define CWMP_FLAG2					CWMP_ID + 78
+
+//#ifdef _PRMT_TR143_
+#define TR143_UDPECHO_ENABLE				CWMP_ID + 79
+#define TR143_UDPECHO_ITFTYPE				CWMP_ID + 80
+#define TR143_UDPECHO_SRCIP				CWMP_ID + 81
+#define TR143_UDPECHO_PORT				CWMP_ID + 82
+#define TR143_UDPECHO_PLUS				CWMP_ID + 83
+//#endif //_PRMT_TR143_
+
+// Magician: This value should be able to persist across CPE reboots.
+#define CWMP_PERSISTENT_DATA				CWMP_ID + 84 // InternetGatewayDevice.DeviceConfig.PersistentData
+
+/*star:20091228 START add for store parameterkey*/
+#define CWMP_PARAMETERKEY				CWMP_ID + 85
+/*star:20091228 END*/
+
+#define CWMP_WAN_INTERFACE				CWMP_ID + 86
+#define CWMP_ACS_URL_OLD				CWMP_ID + 87
+
+#ifdef _PRMT_X_CT_COM_ALARM_MONITOR_
+#define CWMP_CT_ALARM_ENABLE				CWMP_ID + 88
+#define CWMP_CT_MONITOR_ENABLE				CWMP_ID + 89
+#endif
+
+#ifdef _PRMT_X_CT_COM_USERINFO_
+#define CWMP_USERINFO_STATUS				CWMP_ID + 90
+#define CWMP_USERINFO_LIMIT				CWMP_ID + 91
+#define CWMP_USERINFO_TIMES				CWMP_ID + 92
+#define CWMP_REG_INFORM_STATUS				CWMP_ID + 93
+#endif
+
+#ifdef _PRMT_X_CT_COM_PING_
+#define CWMP_CT_PING_ENABLE				CWMP_ID + 94
+#endif
+
+#ifdef E8B_NEW_DIAGNOSE
+#define CWMP_USERINFO_RESULT				CWMP_ID + 95
+#define CWMP_USERINFO_NEED_REBOOT			CWMP_ID + 96
+#define CWMP_USERINFO_SERV_NUM				CWMP_ID + 97
+#define CWMP_USERINFO_SERV_NAME				CWMP_ID + 98
+#define CWMP_USERINFO_SERV_NUM_DONE			CWMP_ID + 99
+#define CWMP_USERINFO_SERV_NAME_DONE			CWMP_ID + 100
+#endif
+#else /*_CWMP_MIB_*/
+#define CWMP_ID						1000
+#if defined( _PRMT_X_CT_COM_DHCP_)||defined(IP_BASED_CLIENT_TYPE)
+#define CWMP_CT_STB_MINADDR				CWMP_ID + 51
+#define CWMP_CT_STB_MAXADDR				CWMP_ID + 52
+#define CWMP_CT_PHN_MINADDR				CWMP_ID + 53
+#define CWMP_CT_PHN_MAXADDR				CWMP_ID + 54
+#define CWMP_CT_CMR_MINADDR				CWMP_ID + 55
+#define CWMP_CT_CMR_MAXADDR				CWMP_ID + 56
+#define CWMP_CT_PC_MINADDR				CWMP_ID + 57
+#define CWMP_CT_PC_MAXADDR				CWMP_ID + 58
+#define CWMP_CT_HGW_MINADDR             		CWMP_ID + 59
+#define CWMP_CT_HGW_MAXADDR             		CWMP_ID + 60
+#endif //_PRMT_X_CT_COM_DHCP_
+#endif
+
+#ifdef CONFIG_MIDDLEWARE
+#define CWMP_TR069_ENABLE				CWMP_ID + 101
+#define CWMP_MIDWARE_SERVER_ADDR		CWMP_ID + 102
+#define CWMP_MIDWARE_SERVER_PORT		CWMP_ID + 103
+#define MIB_MIDWARE_INFORM_EVENT		CWMP_ID + 104
+#define MIB_MIDWARE_FLAG				CWMP_ID + 105
+#define CWMP_TR069_ENABLE_OLD			CWMP_ID + 106
+#define CWMP_MIDWARE_SERVER_ADDR_OLD	CWMP_ID + 107
+#endif//end of CONFIG_MIDDLEWARE
+
+#ifdef CONFIG_USER_CWMP_UPNP_DM
+#define UPNPDM_RMS_CONFIG_OVER		CWMP_ID + 108
+#define UPNPDM_CONFIG_MODE			CWMP_ID + 109
+#define UPNPDM_RMS_SW_CONFIG_OVER	CWMP_ID + 110
+#endif
+
+#define CWMP_CONFIGURABLE			CWMP_ID + 111
+
+#define CWMP_USERINFO_PROVISIONINGCODE CWMP_ID + 112
+
+#ifdef _PRMT_X_CT_COM_QOE_
+#define CWMP_CT_QOE_ENABLE          CWMP_ID + 113
+#define CWMP_CT_QOE_TESTDOWNLOADURL CWMP_ID + 114
+#define CWMP_CT_QOE_PORT            CWMP_ID + 115
+#endif
+
+#ifdef CONFIG_USER_BEHAVIOR_ANALYSIS
+#define CWMP_CT_NETMONITOR_SWITCH          CWMP_ID + 116
+#define CWMP_CT_NETMONITOR_TYPE            CWMP_ID + 117
+#define CWMP_CT_NETMONITOR_INTERFACE       CWMP_ID + 118
+#define CWMP_CT_NETMONITOR_HOSTNAME        CWMP_ID + 119
+#define CWMP_CT_NETMONITOR_DATABLOCKSIZE   CWMP_ID + 120
+#define CWMP_CT_NETMONITOR_TIMERINTERVAL   CWMP_ID + 121
+#define CWMP_CT_NETMONITOR_TESTREQUESTIMES CWMP_ID + 122
+#define CWMP_CT_NETMONITOR_STARTTIME1      CWMP_ID + 123
+#define CWMP_CT_NETMONITOR_STARTTIME2      CWMP_ID + 124
+#define CWMP_CT_NETMONITOR_ENDTIME1        CWMP_ID + 125
+#define CWMP_CT_NETMONITOR_ENDTIME2        CWMP_ID + 126
+#define CWMP_CT_NETMONITOR_RESV1           CWMP_ID + 127
+#define CWMP_CT_NETMONITOR_RESV2           CWMP_ID + 128
+#endif
+
+#ifdef _PRMT_X_CT_COM_DEVINFO_
+#define CWMP_CT_IP_FORWARD_MODE_ENABLED CWMP_ID + 129
+#endif
+#define CWMP_INFORM_USER_EVENTCODE			CWMP_ID + 130
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU) 
+#define CWMP_GUI_PASSWORD_ENABLE			CWMP_ID + 131
+#define CWMP_CT_MWBAND_TERMINAL_TYPE		CWMP_ID + 132
+#endif
+#define CWMP_DELAY_RESTARTWAN_ENABLE	CWMP_ID + 133
+#define CWMP_DELAY_RESTARTWAN_CHECK_TIME		CWMP_ID + 134
+#define CWMP_FIRMWARE_UPGRADE_MODE CWMP_ID + 135
+
+// multiple province support , start from 1300
+#define MULTI_PROVINCE_ID						5000
+#define PROVINCE_BACKDOOR_ENABLE		MULTI_PROVINCE_ID + 1
+#define PROVINCE_BACKDOOR_PWDTYPE		MULTI_PROVINCE_ID + 2
+#define PROVINCE_PONREG_4STAGEDIAG          MULTI_PROVINCE_ID + 3
+#define PROVINCE_FWUPGRADE_PUSHWEBNOTIFY    MULTI_PROVINCE_ID + 4
+#define PROVINCE_FAKE_PPP_4TR069_WAN		MULTI_PROVINCE_ID + 5
+#define PROVINCE_CWMP_INFORM_TYPE			MULTI_PROVINCE_ID + 6
+#define PROVINCE_8021PCUSTOM_ENABLE 		MULTI_PROVINCE_ID + 7
+#define PROVINCE_8021PCUSTOM_PRIORITY 		MULTI_PROVINCE_ID + 8
+#define PROVINCE_8021PCUSTOM_NUM 4 //1:tr069,2:internet,3:other,4:voice,
+#define PROVINCE_YJYX_SAMEVLAN                  MULTI_PROVINCE_ID + 9
+#ifdef RESERVE_KEY_SETTING
+#define PROVINCE_RESERVE_KEY_SETTING    MULTI_PROVINCE_ID + 10
+#endif
+#define PROVINCE_NO_POPUP_REG_PAGE              MULTI_PROVINCE_ID + 11
+#define PROVINCE_DEV_REG_TYPE                   MULTI_PROVINCE_ID + 12
+#define PROVINCE_DHCP_OPT60_TYPE                MULTI_PROVINCE_ID + 13
+#define PROVINCE_MISCFUNC_TYPE                  MULTI_PROVINCE_ID + 14
+#define PROVINCE_TR143_MAX_SAMPLED              MULTI_PROVINCE_ID + 15
+#define PROVINCE_TR143_SPEED_UP                 MULTI_PROVINCE_ID + 16
+#define PROVINCE_TR143_AUTO_CREATE_WAN  MULTI_PROVINCE_ID + 17
+#ifdef CONFIG_IPV6
+#define PROVINCE_DISABLE_BRIDGE_V4V6_FILTER     MULTI_PROVINCE_ID + 18
+#endif
+#define PROVINCE_TRAP_PPPOE_TRAFFIC     		MULTI_PROVINCE_ID + 19
+#define PROVINCE_SKIP_SERVER_PATH_CHECK MULTI_PROVINCE_ID + 20
+#define PROVINCE_GPON_PLOAM_PWD_EMPTY_CHECK		MULTI_PROVINCE_ID + 21
+#ifdef CONFIG_EPON_FEATURE
+#define PROVINCE_OAMCTRL_TR069WAN 				MULTI_PROVINCE_ID + 22
+#endif
+#define PROVINCE_CWMP_RESET_AS_FACTORY_RESET	MULTI_PROVINCE_ID + 23
+#define PROVINCE_PASSAUTH_BOOTSTRAP_ENABLE	MULTI_PROVINCE_ID + 24
+#define PROVINCE_GPON_FAKE_RANGING		MULTI_PROVINCE_ID + 25
+#define PROVINCE_IGMP_PPPOE_PASSTHROUGH_LEARN	MULTI_PROVINCE_ID + 26
+#define PROVINCE_WAN_RING_CHECK_ETH_TYPE		MULTI_PROVINCE_ID + 27
+#define PROVINCE_SICHUAN_E8C_BACKDOOR_ENABLE		MULTI_PROVINCE_ID + 28
+#define PROVINCE_DISABLE_MCAST_INGRESS_VLAN_FILTER		MULTI_PROVINCE_ID + 29
+#define PROVINCE_FUJIAN_VOICE_REGISTER_DHCP_INTERVAL		MULTI_PROVINCE_ID + 30
+#define PROVINCE_SICHUAN_FUNCTION_MASK 			MULTI_PROVINCE_ID + 31
+#define PROVINCE_SICHUAN_RESET_PASSWORD			MULTI_PROVINCE_ID + 32
+#ifdef SSH_ACCOUNT_INDEPENDENT
+#define PROVINCE_SICHUAN_SSH_USER			MULTI_PROVINCE_ID + 33
+#define PROVINCE_SICHUAN_SSH_PASSWD			MULTI_PROVINCE_ID + 34
+#endif
+#ifdef TFTP_ACCOUNT_INDEPENDENT
+#define PROVINCE_SICHUAN_TFTP_USER			MULTI_PROVINCE_ID + 35
+#define PROVINCE_SICHUAN_TFTP_PASSWD		MULTI_PROVINCE_ID + 36
+#endif
+#ifdef SNMP_ACCOUNT_INDEPENDENT
+#define PROVINCE_SICHUAN_SNMP_USER			MULTI_PROVINCE_ID + 37
+#define PROVINCE_SICHUAN_SNMP_PASSWD		MULTI_PROVINCE_ID + 38
+#endif
+#define PROVINCE_CWMP_PERFORMANCE_REPORT_SUBITEM MULTI_PROVINCE_ID + 39
+#define PROVINCE_SICHUAN_CWMP_SC_CT_COM			MULTI_PROVINCE_ID + 40
+#define PROVINCE_SICHUAN_CWMP_IPOE_DIAGNOSTICS	MULTI_PROVINCE_ID + 41
+#define PROVINCE_MAC_FILTER_SRC_WHITELIST     	MULTI_PROVINCE_ID + 42
+#define PROVINCE_SICHUAN_RESET_BUTTON 			MULTI_PROVINCE_ID + 43
+#define PROVINCE_SICHUAN_PROCFG					MULTI_PROVINCE_ID + 44
+#ifdef _PRMT_X_CT_COM_LANBINDING_CONFIG_
+#define PROVINCE_SICHUAN_MIB_LAN_BINDING_CONFIG_ENABLE		MULTI_PROVINCE_ID + 45
+#endif
+#ifdef STB_L2_FRAME_LOSS_RATE
+#define PROVINCE_SICHUAN_STB_FRAME_LOSS_RATE    MULTI_PROVINCE_ID + 46
+#define PROVINCE_SICHUAN_STB_TEST_PERIOD                MULTI_PROVINCE_ID + 47
+#define PROVINCE_SICHUAN_STB_TEST_FREQUENCY             MULTI_PROVINCE_ID + 48
+#endif
+#define PROVINCE_SICHUAN_WLAN_SURVEY_TIME		MULTI_PROVINCE_ID + 49
+#define PROVINCE_SICHUAN_WLAN_AUTO_CH_TIMEOUT  MULTI_PROVINCE_ID + 50
+#define PROVINCE_SICHUAN_WLAN_SSID_CHINANET	MULTI_PROVINCE_ID + 51		
+#define PROVINCE_SICHUAN_CWMP_WLANVAP_ENABLE	MULTI_PROVINCE_ID + 52
+#ifdef _PRMT_X_CT_COM_MULTICAST_DIAGNOSIS_
+#define PROVINCE_SICHUAN_CWMP_MC_DIAG		MULTI_PROVINCE_ID + 53
+#endif
+#ifdef _PRMT_X_CT_SUPPER_DHCP_LEASE_SC
+#define PROVINCE_SICHUAN_SUPPER_DHCP_LEASE    MULTI_PROVINCE_ID + 54
+#endif
+#ifdef _PRMT_X_CT_ACCESS_EQUIPMENTMAC
+#define PROVINCE_SICHUAN_CWMP_LAN_ACC_DEVICE    MULTI_PROVINCE_ID + 55
+#endif
+#define PROVINCE_SICHUAN_LIGHTSWITCH_STATE		MULTI_PROVINCE_ID + 56
+
+#ifdef CTC_TELNET_CLI_CTRL
+#define PROVINCE_TELNETCLI_ENABLE		MULTI_PROVINCE_ID + 57
+#endif
+#define PROVINCE_MACFILTER_WHITELIST_LOCAL_ALLOW		MULTI_PROVINCE_ID + 58
+#if (defined(CONFIG_CMCC) || defined(CONFIG_CU)) && defined(CONFIG_USER_LANNETINFO)
+#define PROVINCE_AUTO_ADD_HOSTCUSTOMISE_OBJ MULTI_PROVINCE_ID + 59
+#endif
+
+#ifdef CONFIG_USER_CTMANAGEDEAMON
+#define MIB_BUCPE_ID 					6000
+#define MIB_BUCPE_A_LOCATION_OK					MIB_BUCPE_ID + 1
+#define MIB_BUCPE_A_LOCATION_LONGITUDE			MIB_BUCPE_ID + 2
+#define MIB_BUCPE_A_LOCATION_LATITUDE			MIB_BUCPE_ID + 3
+#define MIB_BUCPE_A_LOCATION_ALTITUDE			MIB_BUCPE_ID + 4
+#define MIB_BUCPE_A_LOCATION_HORIZONTALERROR	MIB_BUCPE_ID + 5
+#define MIB_BUCPE_A_GISINTERFACE				MIB_BUCPE_ID + 6
+#define MIB_BUCPE_A_AREACODE					MIB_BUCPE_ID + 7
+#define MIB_BUCPE_A_GISLOCKTIME					MIB_BUCPE_ID + 8
+#define MIB_BUCPE_A_GISDIGEST					MIB_BUCPE_ID + 9
+#define MIB_BUCPE_B_LOCATION_OK					MIB_BUCPE_ID + 10
+#define MIB_BUCPE_B_LOCATION_LONGITUDE			MIB_BUCPE_ID + 11
+#define MIB_BUCPE_B_LOCATION_LATITUDE			MIB_BUCPE_ID + 12
+#define MIB_BUCPE_B_LOCATION_ALTITUDE			MIB_BUCPE_ID + 13
+#define MIB_BUCPE_B_LOCATION_HORIZONTALERROR	MIB_BUCPE_ID + 14
+#define MIB_BUCPE_B_GISINTERFACE				MIB_BUCPE_ID + 15
+#define MIB_BUCPE_B_AREACODE					MIB_BUCPE_ID + 16
+#define MIB_BUCPE_B_GISLOCKTIME					MIB_BUCPE_ID + 17
+#define MIB_BUCPE_B_GISDIGEST					MIB_BUCPE_ID + 18
+#define MIB_BUCPE_REGID							MIB_BUCPE_ID + 19
+#define MIB_BUCPE_SUCCESS_TASK					MIB_BUCPE_ID + 20
+#define MIB_BUCPE_FAIL_TASK						MIB_BUCPE_ID + 21
+#define MIB_BUCPE_FAIL_INFORM					MIB_BUCPE_ID + 22
+#define MIB_BUCPE_SUCCESS_INFORM				MIB_BUCPE_ID + 23
+#define MIB_BUCPE_FAIL_RESULT					MIB_BUCPE_ID + 24
+#define MIB_BUCPE_SUCCESS_RESULT				MIB_BUCPE_ID + 25
+#define MIB_BUCPE_LAST_INFORM_TIME				MIB_BUCPE_ID + 26
+#define MIB_BUCPE_MANAGEMENT_PLATFORM			MIB_BUCPE_ID + 27
+#define MIB_BUCPE_BACKUP_MANAGEMENT_PLATFORM	MIB_BUCPE_ID + 28
+#define MIB_BUCPE_REPORT_PERIOD					MIB_BUCPE_ID + 29
+#define MIB_BUCPE_UUID							MIB_BUCPE_ID + 30
+#define MIB_BUCPE_A_LOCATION_ALTITUDEERROR		MIB_BUCPE_ID + 31
+#define MIB_BUCPE_B_LOCATION_ALTITUDEERROR		MIB_BUCPE_ID + 32
+#define MIB_BUCPE_DIAG_TIMER 					MIB_BUCPE_ID + 33
+#define MIB_BUCPE_DIAG_CYCLE 					MIB_BUCPE_ID + 34
+#define MIB_BUCPE_SPEED_URL						MIB_BUCPE_ID + 35
+#define MIB_BUCPE_SPEED_URL_BAK					MIB_BUCPE_ID + 36
+#define MIB_BUCPE_TRACE_URL						MIB_BUCPE_ID + 37
+#define MIB_BUCPE_APP_CLIENT_TIMEOUT			MIB_BUCPE_ID + 38
+#endif
+
+//================== start of yueme mib entry=================
+#define YUEME_ENTRY_ID						CS_ENTRY_ID + 7000
+
+#ifdef CONFIG_MULTI_FTPD_ACCOUNT
+#define MIB_FTP_ENABLE						YUEME_ENTRY_ID + 1
+#endif
+#define MIB_VSFTP_ENABLE					YUEME_ENTRY_ID + 2
+#define MIB_VSFTP_ANNONYMOUS				YUEME_ENTRY_ID + 3
+#ifdef CONFIG_MULTI_SMBD_ACCOUNT
+#define MIB_SMB_SERVER_ENABLE				YUEME_ENTRY_ID + 4
+#endif
+
+#define MIB_CWMP_MGT_URL					YUEME_ENTRY_ID + 5
+#define MIB_CWMP_MGT_PORT					YUEME_ENTRY_ID + 6
+#define MIB_CWMP_MGT_HEARTBEAT 				YUEME_ENTRY_ID + 7
+#define MIB_CWMP_MGT_ABILITY 				YUEME_ENTRY_ID + 8
+#define MIB_CWMP_MGT_LOCATEPORT 			YUEME_ENTRY_ID + 9
+#define MIB_CWMP_MGT_VERSION 				YUEME_ENTRY_ID + 10
+#define MIB_CWMP_MGT_APPMODEL 				YUEME_ENTRY_ID + 11
+#define MIB_CWMP_MGT_SSN 					YUEME_ENTRY_ID + 12
+
+#define	MIB_DBUS_PROXY_DEBUG				YUEME_ENTRY_ID + 13
+#define MIB_PLATFORM_DISTADDR_TBL			YUEME_ENTRY_ID + 14
+#define MIB_PLATFORM_DISTSTATUS_TBL			YUEME_ENTRY_ID + 15
+#define MIB_PLATFORM_DISTERR_TBL			YUEME_ENTRY_ID + 16
+#define MIB_PLATFORM_OPERADDR_TBL			YUEME_ENTRY_ID + 17
+#define MIB_PLATFORM_OPERSTATUS_TBL			YUEME_ENTRY_ID + 18
+#define MIB_PLATFORM_OPERERR_TBL			YUEME_ENTRY_ID + 19
+#define MIB_PLATFORM_PLUGINADDR_TBL			YUEME_ENTRY_ID + 20
+#define MIB_PLATFORM_PLUGINSTATUS_TBL		YUEME_ENTRY_ID + 21
+#define MIB_PLATFORM_PLUGINERR_TBL			YUEME_ENTRY_ID + 22
+#define MIB_PROVINCE_TBL					YUEME_ENTRY_ID + 23
+#define MIB_MEMALARM_TBL					YUEME_ENTRY_ID + 24
+#define MIB_MEMLIMIT_TBL					YUEME_ENTRY_ID + 25
+#define MIB_ITMSPROTOCOL_CERSION_TBL		YUEME_ENTRY_ID + 26
+#define MIB_CAPABILITY_TBL					YUEME_ENTRY_ID + 27
+#define MIB_FLASHSIZE_TBL					YUEME_ENTRY_ID + 28
+#define MIB_RAMSIZE_TBL						YUEME_ENTRY_ID + 29
+#define MIB_WIFIMODE_TBL					YUEME_ENTRY_ID + 30
+#define MIB_PLATFORM_PORT_TBL				YUEME_ENTRY_ID + 31
+#define MIB_PLATFORM_HEARTBEAT_TBL			YUEME_ENTRY_ID + 32
+#define MIB_PLATFORM_ABILITY_TBL			YUEME_ENTRY_ID + 33
+#define MIB_PLATFORM_LOCALPORT_TBL			YUEME_ENTRY_ID + 34
+#define MIB_PLATFORM_VERSION_TBL			YUEME_ENTRY_ID + 35
+#define MIB_PLATFORM_SSN_TBL				YUEME_ENTRY_ID + 36
+#define MIB_RESTORE_STATUS_TBL				YUEME_ENTRY_ID + 37
+#define MIB_HTTPDOWNLOAD_TBL				YUEME_ENTRY_ID + 38
+#define MIB_DBUS_DEVNAME_TBL				YUEME_ENTRY_ID + 39
+#ifdef CONFIG_USER_RTK_OMD
+#define MIB_OMDIAG_NFCONNTRACKNUM			YUEME_ENTRY_ID + 40
+#define MIB_OMDIAG_FLASHTHRESHOLD			YUEME_ENTRY_ID + 41
+#define MIB_OMDIAG_CPUTEMPTHRESHOLD			YUEME_ENTRY_ID + 42
+#define MIB_OMDIAG_PONTEMPTHRESHOLD			YUEME_ENTRY_ID + 43
+#endif
+#ifdef _PRMT_X_CT_COM_PERFORMANCE_REPORT_
+#define MIB_PERFORMANCE_REPORT_LOGSERVERURL		YUEME_ENTRY_ID + 45
+#define MIB_PERFORMANCE_REPORT_LOGUPLOADINTERVAL		YUEME_ENTRY_ID + 46
+#define MIB_PERFORMANCE_REPORT_LOGCOUNTINTERVAL		YUEME_ENTRY_ID + 47
+#endif
+#define MIB_ROAMING2G_ENABLE			YUEME_ENTRY_ID + 49
+#define MIB_ROAMING2G_STARTTIME			YUEME_ENTRY_ID + 50
+#define MIB_ROAMING2G_RSSI_TH1			YUEME_ENTRY_ID + 51
+#define MIB_ROAMING2G_RSSI_TH2			YUEME_ENTRY_ID + 52
+#define MIB_ROAMING5G_ENABLE			YUEME_ENTRY_ID + 53
+#define MIB_ROAMING5G_STARTTIME			YUEME_ENTRY_ID + 54
+#define MIB_ROAMING5G_RSSI_TH1			YUEME_ENTRY_ID + 55
+#define MIB_ROAMING5G_RSSI_TH2			YUEME_ENTRY_ID + 56
+#define MIB_BEACONTXVSIEMGR_ENABLE				YUEME_ENTRY_ID + 57
+#define MIB_BEACONTXVSIEMGR_MAXENTRYNUM			YUEME_ENTRY_ID + 58
+#define MIB_BEACONTXVSIEMGR_MAXCONCURRENTTASK	YUEME_ENTRY_ID + 59
+#define MIB_PROBERXVSIEMGR_ENABLE				YUEME_ENTRY_ID + 60
+#define MIB_PLATFORM_BSSADDR_TBL				YUEME_ENTRY_ID + 61
+#define MIB_VLAN_4K_TRANSPARENT_EN		YUEME_ENTRY_ID + 62
+
+//================== end of yueme mib entry=================
+
+//================== start of cmcc mib entry=================
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define CMCC_ENTRY_ID						CS_ENTRY_ID + 8000
+#if defined(CONFIG_CMCC_OSGIMANAGE)
+#define MIB_OSGIMANAGE_PLATFORM 			CMCC_ENTRY_ID + 1
+#define MIB_OSGIMANAGE_PORT 				CMCC_ENTRY_ID + 2
+#define MIB_CMCC_JAR_LINK 					CMCC_ENTRY_ID + 3
+#define MIB_OSGIMANAGE_FORCE_HB_ENABLE		CMCC_ENTRY_ID + 4
+#define MIB_OSGIMANAGE_FORCE_HB_INTERVAL	CMCC_ENTRY_ID + 5
+#define MIB_OSGIMANAGE_USE_FTP_CLIENT		CMCC_ENTRY_ID + 6
+#endif
+#define MIB_OSGI_DEBUG						CMCC_ENTRY_ID + 7
+#define MIB_IGMP_MLD_SNOOPING				CMCC_ENTRY_ID + 8
+#define MIB_IGMP_MLD_PROXY					CMCC_ENTRY_ID + 9
+#define MIB_PROVINCE_SW_VERSION 			CMCC_ENTRY_ID + 10
+
+#define MIB_IPV6_VLAN_ENABLE				CMCC_ENTRY_ID + 11
+#define MIB_IPV4_VLAN_ID					CMCC_ENTRY_ID + 12
+#define MIB_IPV6_VLAN_ID					CMCC_ENTRY_ID + 13
+#define MIB_WEB_LOID_PAGE_ENABLE			CMCC_ENTRY_ID + 14
+#ifdef CONFIG_USER_OPENJDK8
+#define MIB_OSGI_APACHE_WEB_ENABLE			CMCC_ENTRY_ID + 15
+#define MIB_OSGI_BUNDLE_CMCCDPI_PATH		CMCC_ENTRY_ID + 16
+#define MIB_OSGI_BUNDLE_APPCORE_PATH		CMCC_ENTRY_ID + 17
+#define MIB_OSGI_BUNDLE_ANDLINK_PATH		CMCC_ENTRY_ID + 18
+#endif
+
+#define MIB_WEB_WLAN_SSID2_ENABLE			CMCC_ENTRY_ID + 19
+#define MIB_WEB_WLAN_SSIDPREFIX_ENABLE			CMCC_ENTRY_ID + 20
+#define MIB_WEB_WLAN_SSID2_ONLY_ENABLE			CMCC_ENTRY_ID + 21
+#endif //CONFIG_CMCC
+//================== end of cmcc mib entry=================
+
+#ifdef CONFIG_USER_CUMANAGEDEAMON
+#define CU_EXTEND_ID    						8500
+#define CU_SRVMGT_MGTURL  					CU_EXTEND_ID + 1
+#define CU_SRVMGT_MGTPORT  				CU_EXTEND_ID + 2
+#define CU_SRVMGT_WANINTF  				CU_EXTEND_ID + 3
+#define CU_SRVMGT_HB  						CU_EXTEND_ID + 4
+#define CU_SRVMGT_ABILITY  					CU_EXTEND_ID + 5
+#define CU_SRVMGT_LOCALPORT1  				CU_EXTEND_ID + 6
+#define CU_SRVMGT_LOCALPORT2  				CU_EXTEND_ID + 7
+#define CU_SRVMGT_LOCALUSERNAME  			CU_EXTEND_ID + 8
+#define CU_SRVMGT_LOCALUSERPASS  			CU_EXTEND_ID + 9
+#define CU_SRVMGT_LOCALADMINNAME  		CU_EXTEND_ID + 10
+#define CU_SRVMGT_LOCALADMINPASS  		CU_EXTEND_ID + 11
+#define CU_SRVMGT_VERSION  				CU_EXTEND_ID + 12
+#define CU_SRVMGT_BOOTFLAG 				CU_EXTEND_ID + 13
+#define CU_SRVMGT_LAN_DEVICE_ACC_ENABLE 	CU_EXTEND_ID + 14
+#define CU_SRVMGT_ORIGINAL_PSK  			CU_EXTEND_ID + 15
+#ifdef CU_CUMANAGEDEAMON_NEW_SPEC
+#define CU_SRVMGT_PROVINCE  				CU_EXTEND_ID + 16
+#define CU_SRVMGT_SHAREPASSWORD  		CU_EXTEND_ID + 17
+#define CU_SRVMGT_NEW_SPEC_ENABLE		CU_EXTEND_ID + 18
+#endif
+#define SCHEDULE_LOG_FLAG  				CU_EXTEND_ID + 19
+#endif
+
+//==================start      awifi feature    =================
+#define AWIFI_PROVINCE_CODE                    CS_ENTRY_ID + 9000
+#ifdef CONFIG_CT_AWIFI_JITUAN_FEATURE
+#define AWIFI_ID		AWIFI_PROVINCE_CODE + 1
+#ifdef CONFIG_CT_AWIFI_JITUAN_SMARTWIFI
+#define AWIFI_SOFTVER						AWIFI_ID + 1
+#define AWIFI_IMAGE_URL					AWIFI_ID + 2
+#define AWIFI_LAN_AUTH_ENABLE				AWIFI_ID + 3
+#define AWIFI_LAN_REG_SERVER				AWIFI_ID + 4
+#define AWIFI_LAN_REG_PORT				AWIFI_ID + 5
+#define AWIFI_LAN_REG_URL					AWIFI_ID + 6
+#define AWIFI_LAN_AUTH_SERVER				AWIFI_ID + 7
+#define AWIFI_LAN_AUTH_PORT				AWIFI_ID + 8
+#define AWIFI_LAN_AUTH_URL				AWIFI_ID + 9
+#define AWIFI_LAN_PORTAL_SERVER			AWIFI_ID + 10
+#define AWIFI_LAN_PORTAL_PORT				AWIFI_ID + 11
+#define AWIFI_LAN1_AUTH_ENABLE			AWIFI_ID + 12
+#define AWIFI_LAN2_AUTH_ENABLE			AWIFI_ID + 13
+#define AWIFI_LAN3_AUTH_ENABLE			AWIFI_ID + 14
+#define AWIFI_LAN4_AUTH_ENABLE			AWIFI_ID + 15
+#define AWIFI_WLAN1_AUTH_ENABLE			AWIFI_ID + 16
+#define AWIFI_REPORT_URL					AWIFI_ID + 17
+#define AWIFI_APPLYID					AWIFI_ID + 18
+#define AWIFI_CITY					AWIFI_ID + 19
+#endif
+#endif
+
+//===============end      awifi feature    =====================
+/*
+ * MIB RS (Running Setting)
+ */
+#define RS_ENTRY_ID				10000
+#ifdef CONFIG_USER_RTK_LBD
+#define MIB_RS_LBD_PORT_STATUS		RS_ENTRY_ID + 1
+#endif
+#define MIB_RS_PING_INTF RS_ENTRY_ID + 2
+#define MIB_RS_PING_HOST RS_ENTRY_ID + 3
+#define MIB_RS_TRACEROUTE_INTF RS_ENTRY_ID + 4
+#define MIB_RS_TRACEROUTE_HOST RS_ENTRY_ID + 5
+#define MIB_RS_CWMP_INFORM_ATTEMPT_NUM		RS_ENTRY_ID + 6
+#define MIB_RS_CWMP_INFORM_OK_NUM			RS_ENTRY_ID + 7
+#ifdef CONFIG_USER_BEHAVIOR_ANALYSIS
+#define MIB_RS_NP_DNS_INTF RS_ENTRY_ID + 8
+#endif
+#define MIB_RS_CWMP_SENDING_STBBIND RS_ENTRY_ID + 9
+#define MIB_RS_CWMP_LAST_INFORM_TIME	RS_ENTRY_ID + 10
+#define MIB_RS_CWMP_STBBIND_NEED_UPDATE RS_ENTRY_ID + 11
+#ifdef CONFIG_USER_CWMP_TR069
+#ifdef CONFIG_TR142_MODULE
+#define RS_OMCI_ACS_CONFIGURED	RS_ENTRY_ID + 12
+#define RS_OMCI_ACS_URL			RS_ENTRY_ID + 13
+#define RS_OMCI_ACS_USERNAME	RS_ENTRY_ID + 14
+#define RS_OMCI_ACS_PASSWD		RS_ENTRY_ID + 15
+#define RS_OMCI_TR069_IF_ID		RS_ENTRY_ID + 16
+#define RS_OMCI_TR069_IF_NAME	RS_ENTRY_ID + 17
+#endif
+#define RS_DHCP_ACS_URL			RS_ENTRY_ID + 18
+#define RS_DHCP_TR069_IF_NAME	RS_ENTRY_ID + 19
+#define RS_CWMP_STATUS			RS_ENTRY_ID + 20
+#define RS_CWMP_USED_ACS_URL	RS_ENTRY_ID + 21
+#define RS_CWMP_USED_ACS_FROM	RS_ENTRY_ID + 22
+#endif //CONFIG_USER_CWMP_TR069
+#define MIB_RS_CWMP_SESSION_START_TIME RS_ENTRY_ID + 23
+#define MIB_RS_CWMP_SESSION_END_TIME RS_ENTRY_ID + 24
+#ifdef _PRMT_X_CMCC_SECURITY_
+#define MIB_RS_PARENTALCTRL_RULE_RESET RS_ENTRY_ID + 25
+#endif
+
+#define X_CT_SRV_TR069		0x01
+#define X_CT_SRV_INTERNET	0x02
+#define X_CT_SRV_OTHER		0x04
+#define X_CT_SRV_VOICE		0x08
+#ifdef CONFIG_SUPPORT_IPTV_APPLICATIONTYPE
+#define OTHER_NORMAL_TYPE	0
+#define OTHER_IPTV_TYPE	1
+#endif
+#define X_CT_SRV_SPECIAL_SERVICE_1		0x10
+#define X_CT_SRV_SPECIAL_SERVICE_2		0x20
+#define X_CT_SRV_SPECIAL_SERVICE_3		0x40
+#define X_CT_SRV_SPECIAL_SERVICE_4		0x80
+#define X_CT_SRV_SPECIAL_SERVICE_ALL	( X_CT_SRV_SPECIAL_SERVICE_1|X_CT_SRV_SPECIAL_SERVICE_2|X_CT_SRV_SPECIAL_SERVICE_3|X_CT_SRV_SPECIAL_SERVICE_4)
+#ifdef CONFIG_YUEME
+#ifdef VOIP_SUPPORT
+#define CT_SRV_MASK		0xFF
+#else
+#define CT_SRV_MASK		0xF7
+#endif
+#else
+#ifdef VOIP_SUPPORT
+#define CT_SRV_MASK		0x0F
+#else
+#define CT_SRV_MASK		0x07
+#endif
+#endif
+
+#ifdef CONFIG_LUNA
+#if defined(CONFIG_GPON_FEATURE) || defined(CONFIG_EPON_FEATURE)|| defined(CONFIG_FIBER_FEATURE)
+enum  {
+	ETH_MODE=0,
+	GPON_MODE,
+	EPON_MODE,
+	FIBER_MODE
+} PON_MODE_T;
+
+enum  {
+	PON_1G1G_SPEED=0,
+	PON_10G1G_SPEED,
+	PON_10G10G_SPEED,
+} PON_SPEED_T;
+#endif
+#endif
+
+/*
+ * MIB value and constant
+ */
+#define MAX_NAME_LEN					30
+#define MAX_WAN_NAME_LEN				40	// E8 WAN connection name
+#define MAX_PPP_NAME_LEN				63
+#define ENC_NAME_LEN					((MAX_NAME_LEN+2)/3*4)
+#define MAX_FILTER_NUM					16
+#ifdef CONFIG_RTK_L34_ENABLE
+#define MAX_VC_NUM                  14
+#else
+#define MAX_VC_NUM					8
+#endif
+#ifdef CONFIG_ETHWAN
+#define MAX_ETHWAN_NUM					1
+#endif
+#define MAX_PPP_NUM					8
+#ifdef CONFIG_USER_PPPOMODEM
+#define MODEM_PPPIDX_FROM				MAX_PPP_NUM
+#define MAX_MODEM_PPPNUM				1
+#endif //CONFIG_USER_PPPOMODEM
+#define MAX_IFINDEX					7
+#define COMMENT_LEN					60
+#define IP_ADDR_LEN					4
+#define MAC_ADDR_LEN					6
+#define SNMP_STRING_LEN					64
+#define IP6_ADDR_LEN					16
+#define MAX_VER_LEN					10
+#define MAX_RADVD_CONF_LEN				15
+#define MAX_RADVD_CONF_PREFIX_LEN			48
+#define MAX_DUID_LEN					42
+#define MAX_V6_IP_LEN					40
+#define MAX_DHCPV6_CHAIN_ENTRY				5
+
+#ifdef QOS_DIFFSERV
+#define MAX_QOS_RULE					20	// add 1 for diffserv rule
+#else
+#define MAX_QOS_RULE					16
+#endif
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define MAX_QOS_QUEUE_NUM				8
+#else
+#define MAX_QOS_QUEUE_NUM				4	//24
+#endif
+#define MAX_QUEUE_DESC_LEN				30
+
+#define MAX_QOS_CLASSFICATION_NUM  		16
+#define MAX_QOS_RULE_NUM_ONE_CLASSFICATION 10
+#define MAX_QOS_CLASSFICATIONTYPE_NUM 	(MAX_QOS_CLASSFICATION_NUM*MAX_QOS_RULE_NUM_ONE_CLASSFICATION)
+
+
+#ifdef CONFIG_ETHWAN
+#define SW_PORT_NUM				CONFIG_LAN_PORT_NUM + 1
+#define SW_LAN_PORT_NUM			CONFIG_LAN_PORT_NUM
+#else
+#define SW_PORT_NUM				CONFIG_LAN_PORT_NUM
+#define SW_LAN_PORT_NUM			SW_PORT_NUM
+#endif
+#define VLAN_NUM					5
+
+#define IF_DOMAIN_LAN					0x10
+#define IF_DOMAIN_ELAN					0x20
+#define IF_DOMAIN_WLAN					0x40
+#define IF_DOMAIN_WAN					0x80
+
+#define RIP_NONE					0
+#define RIP_V1						1
+#define RIP_V2						2
+#define RIP_V1_V2					3
+#define RIP_V1_COMPAT					4
+
+#ifdef WLAN_8_SSID_SUPPORT
+#define MAX_LANIF_NUM					20
+#else
+#define MAX_LANIF_NUM					14
+#endif
+
+//#ifdef WLAN_SUPPORT
+#define MAX_IPSEC_NUM					6
+#define MAX_IPIP_NUM					2
+#define MAX_PPTP_NUM					2
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define MAX_L2TP_NUM					1
+#else
+#define MAX_L2TP_NUM					2
+#endif
+#if defined(CONFIG_USER_PPTPD_PPTPD) || defined(CONFIG_USER_L2TPD_LNS)
+#define MAX_VPND_NUM					3
+#define MAX_VPN_ACCOUNT_NUM				20
+#endif
+#ifdef WLAN_SUPPORT
+#define MAX_MBSSID_NUM					(WLAN_MAX_ITF_INDEX+1)
+#endif
+#define MAX_SSID_LEN					33
+#define WEP64_KEY_LEN					5
+#define WEP128_KEY_LEN					13
+#define MAX_CHAN_NUM					14
+#define MAX_5G_CHANNEL_NUM			196
+#define MAX_5G_DIFF_NUM					14
+
+//#ifdef WLAN_WPA
+#define MAX_PSK_LEN					64
+#define MAX_RS_PASS_LEN					32
+//#endif
+
+#define TX_RATE_1M					0x01
+#define TX_RATE_2M					0x02
+#define TX_RATE_5M					0x04
+#define TX_RATE_11M					0x08
+
+#define TX_RATE_6M					0x10
+#define TX_RATE_9M					0x20
+#define TX_RATE_12M					0x40
+#define TX_RATE_18M					0x80
+#define TX_RATE_24M					0x100
+#define TX_RATE_36M					0x200
+#define TX_RATE_48M					0x400
+#define TX_RATE_54M					0x800
+
+#define MAX_WLAN_AC_NUM					32
+#ifdef WLAN_11R
+#define MAX_VWLAN_FTKH_NUM			8
+#define MAX_WLAN_FTKH_NUM			(8*(NUM_VWLAN_INTERFACE+1))
+#endif
+#define MAX_WIFI_TIMER_EX_NUM			100
+#define MAX_WIFI_TIMER_NUM			100
+#ifdef CONFIG_RG_SLEEPMODE_TIMER
+#define MAX_RG_POWERSAVE_SCHED_NUM			100
+#endif
+
+#define MAXFNAME					60
+
+//#ifdef WLAN_WDS
+#define MAX_WDS_NUM					8
+//#endif
+
+#define MAX_STA_NUM					64	// max support sta number
+
+/* flag of sta info */
+#define STA_INFO_FLAG_AUTH_OPEN     			0x01
+#define STA_INFO_FLAG_AUTH_WEP      			0x02
+#define STA_INFO_FLAG_ASOC          			0x04
+#define STA_INFO_FLAG_ASLEEP        			0x08
+
+//#ifdef WLAN_WEB_REDIRECT //jiunming,web_redirect
+#define MAX_URL_LEN					1024
+//#endif
+//#endif // of WLAN_SUPPORT
+
+#define MAX_VPN_ACC_PW_LEN				128
+
+#define MAX_DEVNAME_LEN					128
+
+// Added by Mason Yu for URL Blocking
+#if defined(URL_BLOCKING_SUPPORT)||defined(URL_ALLOWING_SUPPORT)
+#define MAX_URL_LENGTH					128
+#define MAX_KEYWD_LENGTH				20
+#endif
+
+#ifdef DOMAIN_BLOCKING_SUPPORT
+#define MAX_DOMAIN_LENGTH				120     // The value( 8 * 14=112) must be not less than 50.(because the domainblk.asp limit the value as 50.
+#define MAX_DOMAIN_GROUP				8
+#define MAX_DOMAIN_SUB_STRING				15
+#endif
+
+#define ENCAP_VCMUX					0
+#define ENCAP_LLC					1
+
+#define BRIDGE_ETHERNET		0
+#define BRIDGE_PPPOE		1
+#define BRIDGE_DISABLE		2
+
+#define ATM_MAX_US_PCR		6000
+
+#ifdef _CWMP_MIB_ /*jiunming, mib for cwmp-tr069*/
+/*flag for CWMP_FLAG setting*/
+#define CWMP_FLAG_DEBUG_MSG	0x01
+#define CWMP_FLAG_CERT_AUTH	0x02
+#define CWMP_FLAG_SENDGETRPC	0x04
+#define CWMP_FLAG_SKIPMREBOOT	0x08
+#define CWMP_FLAG_DELAY		0x10
+#define CWMP_FLAG_AUTORUN	0x20
+#define CWMP_FLAG_CTINFORMEXT	0x40
+#define CWMP_FLAG_SELFREBOOT    0x80
+/*flag for CWMP_FLAG2 setting*/
+#define CWMP_FLAG2_DIS_CONREQ_AUTH		0x01  /*disable connection request authentication*/
+#define CWMP_FLAG2_DEFAULT_WANIP_IN_INFORM	0x02  /*bring the default wan ip in the inform*/
+#define CWMP_FLAG2_NULL_TO_SKIP_AUTH		0x04
+#define CWMP_FLAG2_HAD_SENT_BOOTSTRAP		0x08
+#define CWMP_FLAG2_USE_TR181				0x10
+#define CWMP_FLAG2_HTTP_503					0x20
+#ifdef CONFIG_E8B
+#define CWMP_FLAG2_HAD_SENT_LONGRESET		0x40
+#endif
+#define CWMP_FLAG2_CWMP_DISABLE				0x80
+#define CWMP_FLAG2_CWMP_PRINT_PACKET		0x100
+
+
+/*EC_xxxxx event must consist with those defined in cwmp_rpc.h*/
+#ifdef _PRMT_X_CT_COM_USERINFO_
+#define CWMP_REG_IDLE		0
+#define CWMP_REG_REQUESTED	1
+#define CWMP_REG_RESPONSED	2
+#endif
+#ifdef CONFIG_E8B
+/* Should be sync with porting_ctcom.h */
+#define EC_X_CT_COM_ACCOUNT		0x00000001	/*X_CT-COM_ACCOUNTCHANGE*/
+#define EC_X_CT_COM_BIND			0x00000002	/*X_CT-COM_BIND*/
+#define EC_X_CT_COM_ALARM			0x00000004	/*X_CT-COM_ALARM*/
+#define EC_X_CT_COM_CLEARALARM		0x00000008	/*X_CT-COM_CLEARALARM*/
+#define EC_X_CT_COM_MONITOR		0x00000010	/*X_CT-COM_MONITOR*/
+//#define EC_X_CT_COM_DSLMODECHANGE	0x00000020	/* You can add a new event here */
+#define EC_X_CT_COM_LONGRESET		0x00000040	/* X_CT-COM_LONGRESET */
+#define EC_X_CT_COM_DNSLIMITALERT	0x00000080	/* X_CT-COM_DNSLIMITALERT */
+#define EC_X_CT_COM_BIND_1 		0x00000100	/* X_CT-COM_BIND_1 */
+#define EC_X_CT_COM_BIND_2 		0x00000200	/* X_CT-COM_BIND_2 */
+#define EC_X_CT_COM_NAME_CHANGE	0x00000400	/* X_CT-COM_NAME_CHANGE */
+#define EC_X_CT_COM_STBBIND		0x00000800	/* X CT-COM STBBIND */
+#endif
+
+typedef enum {CWMP_STATUS_NOT_CONNECTED=0, CWMP_STATUS_CONNECTING=1, CWMP_STATUS_CONNETED=2, CWMP_STATUS_SUCCESS=3, CWMP_STATUS_ERROR=4 } CWMP_STATUS_T;
+typedef enum {CWMP_ACS_FROM_NONE=0, CWMP_ACS_FROM_MIB=1, CWMP_ACS_FROM_OMCI=2, CWMP_ACS_FROM_DHCP=3} CWMP_ACS_FROM_T;
+#endif //_CWMP_MIB_
+
+#ifdef _PRMT_X_CT_COM_ALARM_MONITOR_
+#define PARA_NAME_LEN 128
+#endif
+
+#ifdef RESERVE_KEY_SETTING
+#define RESERVE_KEY_SETTING_DEFAULT 0
+#define RESERVE_KEY_SETTING_JSU_1 1
+#endif
+
+#define CWMP_INFORM_TYPE_DEFAULT        0
+#define CWMP_INFORM_TYPE_GUD            1 // Guangdong Province
+#define CWMP_INFORM_TYPE_JSU            2 // Jiangsu Province
+#define CWMP_INFORM_TYPE_ANH            3 // Anhui Province
+#define CWMP_INFORM_TYPE_JX             4 // Jiangxi Province
+#define CWMP_INFORM_TYPE_CQ             5 // Chongqing City
+#define CWMP_INFORM_TYPE_SH             6 // Shanghai City
+#define CWMP_INFORM_TYPE_FJ             7 // Fujian Province
+
+#define CWMP_INFORM_TYPE_CMCC_DEFUALT   0 // CMCC default, if we need customization, change it to 1000
+#define CWMP_INFORM_TYPE_CMCC_CQ        101 // CMCC ChongQing city
+#define CWMP_INFORM_TYPE_CMCC_SHD       102 // CMCC ShanDong city
+
+#define DEV_REG_TYPE_DEFAULT            0
+#define DEV_REG_TYPE_JSU                1
+#define DEV_REG_TYPE_AH                 2
+#define DEV_REG_TYPE_GUD		3
+
+#define DHCP_OPT60_TYPE_DEFUALT 0
+#define DHCP_OPT60_TYPE_JSU             1
+
+#ifdef CONFIG_CT_AWIFI_JITUAN_FEATURE
+//======================Awifi province code===============
+#define AWIFI_DEFAULT       0 // default awifi close
+#define AWIFI_ZJ            1 // zhejiang
+//========================================================
+#endif
+
+/*-- Macro declarations --*/
+// resv | media | ppp | vc
+#define PHY_INTF(x)				(x | 0xff00)/*physical interface*/
+#define VC_INDEX(x)				(x & 0x0ff)
+#define PTM_INDEX(x)				(x & 0x0ff)
+#define ETH_INDEX(x)				(x & 0x0ff)
+#define IPIP_INDEX(x)				(x & 0x0ff)					// Mason Yu. Add VPN ifIndex
+#define PPTP_INDEX(x)				(x & 0x0ff)					// Mason Yu. Add VPN ifIndex
+#define L2TP_INDEX(x)				(x & 0x0ff)					// Mason Yu. Add VPN ifIndex
+#define PPP_INDEX(x)				((x  >> 8) & 0x0ff)
+#define MEDIA_INDEX(x)				((x >> 16) & 0x0ff)
+#define TO_IFINDEX(x,y,z)			((x<<16) | (y<<8) | z)
+#define DUMMY_VC_INDEX				0xff
+#define DUMMY_PPP_INDEX				0xff
+#define DUMMY_IFINDEX				0xffff
+
+#define NA_PPP			0xefff
+#define NA_VC			0xffff
+// Jenny, default gateway interface
+#ifdef DEFAULT_GATEWAY_V2
+#define DGW_NONE	0xffff
+#ifdef AUTO_PPPOE_ROUTE
+#define DGW_AUTO	0xefff
+#endif
+#endif
+
+#define MP_PMAP_SHIFT		0
+#define MP_IPQ_SHIFT		1
+#define MP_IGMP_SHIFT		2
+#define MP_MLD_SHIFT		3							// Mason Yu. MLD snooping
+#define MP_PMAP_MASK		(0x01<<MP_PMAP_SHIFT)
+#define MP_IPQ_MASK			(0x01<<MP_IPQ_SHIFT)
+#define MP_IGMP_MASK		(0x01<<MP_IGMP_SHIFT)
+#define MP_MLD_MASK			(0x01<<MP_MLD_SHIFT)		// Mason Yu. MLD snooping
+// Added by Mason Yu for ADSL Tone
+#define MAX_ADSL_TONE		64           // Added by Mason Yu for correct Tone Mib Type
+#define MAX_GAMING		8
+
+#ifdef CONFIG_USER_SAMBA
+#ifdef CONFIG_USER_NMBD
+#define MAX_SAMBA_NETBIOS_NAME_LEN		16
+#endif
+#define MAX_SAMBA_SERVER_STRING_LEN		32
+#define MAX_SAMBA_LEN				32
+#endif
+
+#ifdef _PRMT_X_CT_COM_QOS_
+#define CT_TYPE_NUM    10
+#endif
+
+/*action type for applying new values*/
+#define CWMP_NONE		0
+#define CWMP_START		1
+#define CWMP_STOP		2
+#define CWMP_RESTART		3
+
+#ifdef CONFIG_CT_AWIFI_JITUAN_FEATURE
+#ifdef CONFIG_CT_AWIFI_JITUAN_SMARTWIFI
+#define MAX_SERVERURL_LEN		64
+#endif
+#endif
+
+
+// Mason Yu
+#ifdef PORT_FORWARD_ADVANCE
+typedef enum {PFW_VPN=0, PFW_GAME=1 } PFW_GATEGORY_T;
+typedef enum {PFW_PPTP=0, PFW_L2TP=1 } PFW_RULE_T;
+#endif
+typedef enum { DHCP_DISABLED=0, DHCP_CLIENT=1, DHCP_SERVER=2, PPPOE=3 } DHCP_T;
+typedef enum { DNS_AUTO=0, DNS_MANUAL } DNS_TYPE_T;
+typedef enum { REQUEST_DNS_NONE=0, REQUEST_DNS=1, DNS_SET_BY_API=2} REQUEST_DNS_TYPE_T;
+typedef enum { HAVE_NONE=0, HAVED=1 } HAVE_T;
+typedef enum { CONTINUOUS=0, CONNECT_ON_DEMAND, MANUAL, CONNECT_ON_PKT_COUNT } PPP_CONNECT_TYPE_T;
+typedef enum { PPP_AUTH_AUTO=0, PPP_AUTH_PAP, PPP_AUTH_CHAP, PPP_AUTH_NONE } PPP_AUTH_T;
+typedef enum { PROTO_NONE=0, PROTO_TCP=1, PROTO_UDP=2, PROTO_ICMP=3, PROTO_UDPTCP, PROTO_RTP } PROTO_TYPE_T;
+typedef enum { DIR_OUT=0, DIR_IN, DIR_ALL } DIR_T;
+typedef enum { DHCP_LAN_NONE=0, DHCP_LAN_RELAY=1, DHCP_LAN_SERVER=2,  DHCP_LAN_SERVER_AUTO=3} DHCP_TYPE_T;
+typedef enum { CHANNEL_MODE_BRIDGE=0, CHANNEL_MODE_IPOE, CHANNEL_MODE_PPPOE, CHANNEL_MODE_PPPOA, CHANNEL_MODE_RT1483, CHANNEL_MODE_RT1577, CHANNEL_MODE_DSLITE, CHANNEL_MODE_6RD=8 } CHANNEL_MODE_T;
+typedef enum { ATMQOS_UBR=0, ATMQOS_CBR, ATMQOS_VBR_NRT, ATMQOS_VBR_RT } ATM_QOS_T;
+typedef enum { MP_NONE=0, MP_PORT_MAP=1, MP_VLAN=2, MP_IPQOS=3, MP_IGMPSNOOP=4 } MP_TYPE_T;
+typedef enum { LINK_10HALF=0, LINK_10FULL, LINK_100HALF, LINK_100FULL, LINK_1000HALF, LINK_1000FULL, LINK_AUTO } LINK_TYPE_T;
+typedef enum { DUPLEX_TYPE_HALF=0, DUPLEX_TYPE_FULL=1, DUPLEX_TYPE_AUTO=2 } DUPLEX_TYPE_T;
+typedef enum { SPEED_10M=0, SPEED_100M=1, SPEED_1000M=2, SPEED_AUTO=3 } SPEED_TYPE_T;
+typedef enum { UNI_PORT_NONE=0, UNI_PORT_FE=1, UNI_PORT_GE=2 } UniPortCapabilityType_t;
+typedef enum { PRIO_IP, PRIO_802_1p } PRIO_DOMAIN_T;
+#ifdef ACCOUNT_CONFIG
+typedef enum { PRIV_USER=0, PRIV_ENG=1, PRIV_ROOT=2 } ACC_PRIV_T;
+#endif
+typedef enum { RMT_FTP=0, RMT_TFTP, RMT_TELNET, RMT_PING, RMT_SNMP, RMT_WEB, RMT_HTTPS, RMT_SSH } REMACC_TYPE_T;
+typedef enum { MEDIA_ATM, MEDIA_ETH, MEDIA_IPIP, MEDIA_PPTP, MEDIA_L2TP, MEDIA_PTM, MEDIA_3G, MEDIA_WLAN } MEDIA_TYPE_T;
+typedef enum { IPVER_IPV4 = 1, IPVER_IPV6, IPVER_IPV4_IPV6 } IP_PROTOCOL;
+typedef enum { IPV6_WAN_NONE = 0, IPV6_WAN_AUTO = 1, IPV6_WAN_STATIC = 2, IPV6_WAN_DSLITE = 4, IPV6_WAN_6RD = 8, IPV6_WAN_DHCP = 16 } IPV6_WAN_MODE;
+typedef enum { IPV6_PREFIX_DELEGATION = 0, IPV6_PREFIX_STATIC = 1, IPV6_PREFIX_PPPOE = 2, IPV6_PREFIX_NONE = 3 } IPV6_PRIFIX_MODE;
+typedef enum { IPV6_DNS_HGWPROXY = 0, IPV6_DNS_WANCONN = 1, IPV6_DNS_STATIC = 2} LAN_IPV6_DNS_MODE;
+typedef enum { IPV6_DSLITE_MODE_AUTO = 0, IPV6_DSLITE_MODE_STATIC = 1} WAN_IPV6_DSLITE_MODE;
+typedef enum { RADVD_RUNNING_MODE_DISABLE = 0, RADVD_RUNNING_MODE_STATIC = 1, RADVD_RUNNING_MODE_DELEGATION = 2} RADVD_RUNNING_MODE;
+
+//typedef enum { RG_DEFAULT_ACL_WEIGHT, RG_QOS_LOW_ACL_WEIGHT, RG_QOS_WANVPNINTERFACE_ACL_WEIGHT, RG_QOS_ACL_WEIGHT, RG_FIREWALL_ACL_WEIGHT } RG_ACL_WEIGHT_T; //the larger number, the higher priority.
+typedef enum { QOS_DIRECTION_UPSTREAM , QOS_DIRECTION_DOWNSTREAM} QOS_DIRECTION_T;
+#if defined(CONFIG_LUNA) && defined(CONFIG_RTK_L34_ENABLE)
+typedef enum { PON_PPPOE_TRAP_STOP=0, PON_PPPOE_TRAP_START } PON_PPPOE_TRAP_T;
+#endif
+#if defined(CONFIG_USER_L2TPD_L2TPD) &&  defined(CONFIG_USER_PPTP_CLIENT_PPTP)
+typedef enum { VPN_ENABLE=0, VPN_DISABLE } VPN_ENABLE_T;
+typedef enum { VPN_STATUS_OK=0, VPN_STATUS_NG } VPN_STATUS_T;
+typedef enum { VPN_TYPE_NONE=0, VPN_TYPE_L2TP, VPN_TYPE_PPTP } VPN_TYPE_T;
+typedef enum { ATTACH_MODE_NONE=0, ATTACH_MODE_DIP, ATTACH_MODE_SMAC } ATTACH_MODE_T;
+typedef enum { VPN_MODE_STEADY=0, VPN_MODE_RANDOM } VPN_MODE_T;
+typedef enum { VPN_ENCTYPE_NONE=0, VPN_ENCTYPE_MPPE, VPN_ENCTYPE_MPPC, VPN_ENCTYPE_BOTH } VPN_ENCTYPE_T;
+typedef enum { VPN_PRIO_NONE=0, VPN_PRIO_0, VPN_PRIO_1, VPN_PRIO_2, VPN_PRIO_3, VPN_PRIO_4, VPN_PRIO_5, VPN_PRIO_6, VPN_PRIO_7 } VPN_PRIO_T;
+typedef enum { ACCPXY_RESULT_FAIL=-1, ACCPXY_RESULT_SUCCESS=0 } ACCPXY_RESULT_T;
+typedef enum { ACCPXY_STATUS_SUCCESS=0, ACCPXY_STATUS_FAIL=1 } ACCPXY_STATUS_T;
+#endif
+
+#ifdef CONFIG_USER_DHCPV6_ISC_DHCP411
+typedef enum { DNS_CONF_MODE_STATIC=0, DNS_CONF_MODE_PREFIX_DNS,  DNS_CONF_MODE_ONLY_DNS} DNS_CONF_MODE_T;
+typedef enum { IPV6_POOL_FORMAT_STANDARD=0, IPV6_POOL_FORMAT_EUI64} IPV6_POOL_FORMAT_T;
+#endif
+typedef enum { WHITELIST_USING_LUT_TBL=0, WHITELIST_USING_ACL_RULE} MAC_FILTER_WHITELIST_WAY_T;
+typedef enum { MIB_TYPE_RX_BYTES=0, MIB_TYPE_TX_BYTES} LAN_HOST_POLICE_CTRL_MIB_TYPE_T;
+
+//define manufacturer & oui & productclass
+
+#define DEF_MANUFACTURER_STR            "Realtek"
+#define SOFTWARE_VERSION_STR            "LUNA1.9.0"
+#define HARDWARE_VERSION_STR            "RTL960x"
+#define DEVICE_MODEL_STR                "HGU_CTC"
+#define DEF_MANUFACTUREROUI_STR         "00E04C"
+#define DEF_PRODUCTCLASS_STR            "HGU xPON"
+
+
+//#ifdef _PRMT_TR143_
+typedef enum
+{
+	ITF_ALL=0,
+	ITF_WAN,	//wan pppx or vcx
+	ITF_LAN,	//br0
+
+	ITF_ETH0,	//eth0
+	ITF_ETH0_SW0,	//eth0_sw0
+	ITF_ETH0_SW1,	//eth0_sw1
+	ITF_ETH0_SW2,	//eth0_sw2
+	ITF_ETH0_SW3,	//eth0_sw3
+
+	ITF_WLAN0,	//wlan0
+	ITF_WLAN0_VAP0,	//wlan0-vap0
+	ITF_WLAN0_VAP1,	//wlan0-vap1
+	ITF_WLAN0_VAP2,	//wlan0-vap2
+	ITF_WLAN0_VAP3,	//wlan0-vap3
+
+	ITF_WLAN1,	//wlan0
+	ITF_WLAN1_VAP0,	//wlan0-vap0
+	ITF_WLAN1_VAP1,	//wlan0-vap1
+	ITF_WLAN1_VAP2,	//wlan0-vap2
+	ITF_WLAN1_VAP3,	//wlan0-vap3
+
+	ITF_USB0,	//usb0
+
+	ITF_END		//last one
+} ITF_T;
+#define LANDEVNAME2BR0(a) do{ if(a && (strncmp(a, "eth0", 4)==0||strncmp(a, "wlan0", 5)==0||strncmp(a, "usb0", 4)==0)) strcpy(a, BRIF); }while(0)
+//#endif //_PRMT_TR143_
+
+// Mason Yu on True
+#ifdef ADDRESS_MAPPING
+typedef enum { ADSMAP_NONE=0, ADSMAP_ONE_TO_ONE=1, ADSMAP_MANY_TO_ONE=2, ADSMAP_MANY_TO_MANY=3, ADSMAP_ONE_TO_MANY=4 } ADSMAP_T;
+typedef struct addressMap_ip {
+	unsigned char lsip[16];
+	unsigned char leip[16];
+	unsigned char gsip[16];
+	unsigned char geip[16];
+	unsigned char srcRange[32];
+	unsigned char globalRange[32];
+} ADDRESSMAP_IP_T;
+#endif
+
+#ifdef WLAN_SUPPORT
+
+#ifdef WLAN_WPA
+typedef enum {
+	WIFI_SEC_NONE = 0,
+	WIFI_SEC_WEP = 1,
+	WIFI_SEC_WPA = 2,
+	WIFI_SEC_WPA2 = 4,
+	WIFI_SEC_WPA2_MIXED = 6,
+#ifdef CONFIG_RTL_WAPI_SUPPORT
+	WIFI_SEC_WAPI = 8
+#endif
+} WIFI_SECURITY_T;
+
+// Mason Yu. t123
+typedef enum {
+	ENCRYPT_DISABLED = 0,
+	ENCRYPT_WEP = 1,
+	ENCRYPT_WPA_TKIP = 2,
+#ifdef ENABLE_WPAAES_WPA2TKIP
+	ENCRYPT_WPA_AES = 3,
+#endif
+	ENCRYPT_WPA2_AES = 4,
+#ifdef ENABLE_WPAAES_WPA2TKIP
+	ENCRYPT_WPA2_TKIP = 5,
+#endif
+	ENCRYPT_WPA2_MIXED = 6,
+#ifdef CONFIG_RTL_WAPI_SUPPORT
+	ENCRYPT_WAPI = 7,
+#endif
+	ENCRYPT_COUNT,
+} ENCRYPT_T;
+
+typedef enum { SUPP_NONWPA_NONE=0,SUPP_NONWPA_WEP=1,SUPP_NONWPA_1X=2} SUPP_NONWAP_T;
+typedef enum { WPA_AUTH_AUTO=1, WPA_AUTH_PSK=2 } WPA_AUTH_T;
+typedef enum { WPA_CIPHER_TKIP=1, WPA_CIPHER_AES=2, WPA_CIPHER_MIXED=3 } WPA_CIPHER_T;   // Mason Yu. 201009_new_security
+#endif
+typedef enum { WDS_ENCRYPT_DISABLED=0, WDS_ENCRYPT_WEP64=1, WDS_ENCRYPT_WEP128=2, WDS_ENCRYPT_TKIP=3, WDS_ENCRYPT_AES=4} WDS_ENCRYPT_T;
+typedef enum { WEP_DISABLED=0, WEP64=1, WEP128=2 } WEP_T;
+typedef enum { KEY_ASCII=0, KEY_HEX } KEY_TYPE_T;
+//modified by xl_yue
+typedef enum { LONG_PREAMBLE=0, SHORT_PREAMBLE=1 } PREAMBLE_T;
+typedef enum { AUTH_OPEN=0, AUTH_SHARED, AUTH_BOTH } AUTH_TYPE_T;
+typedef enum { RF_INTERSIL=1, RF_RFMD=2, RF_PHILIP=3, RF_MAXIM=4, RF_GCT=5, RF_MAXIM_AG=6, RF_ZEBRA=7 } RF_TYPE_T;
+typedef enum { AP_MODE=0, CLIENT_MODE=1, WDS_MODE=2, AP_WDS_MODE=3 } WLAN_MODE_T;
+typedef enum { INFRASTRUCTURE=0, ADHOC=1 } NETWORK_TYPE_T;
+typedef enum { BAND_11B=1, BAND_11G=2, BAND_11BG=3, BAND_11A=4, BAND_11N=8, BAND_5G_11AN=12,
+	BAND_5G_11AC=64,BAND_5G_11AAC=68,BAND_5G_11NAC=72,BAND_5G_11ANAC=76} BAND_TYPE_T;
+typedef enum { PHYBAND_OFF=0, PHYBAND_2G=1, PHYBAND_5G=2 } PHYBAND_TYPE_T;
+typedef enum { SMACSPHY=0, DMACSPHY=1, DMACDPHY=2 } MACPHYMODE_TYPE_T;
+typedef enum { BANDMODEBOTH=0, BANDMODESINGLE=1 } WLANBAND2G5GMODE_TYPE_T;
+typedef enum { BANDMODE5G=0, BANDMODE2G=1 } WLANBAND2G5G_SINGLEMODE_TYPE_T;
+
+/* WLAN sta info structure */
+//tylo, should sync. with the struct in wlan driver
+typedef struct wlan_sta_info {
+        unsigned short  aid;
+        unsigned char   addr[6];
+        unsigned long   tx_packets;
+        unsigned long   rx_packets;
+	unsigned long	expired_time;  // 10 mini-sec
+	unsigned short  flag;
+        unsigned char   txOperaRates;
+        unsigned char	rssi;
+        unsigned long	link_time;		// 1 sec unit
+        unsigned long	tx_fail;
+        unsigned long	tx_bytes;
+        unsigned long	rx_bytes;
+        unsigned char network;
+        unsigned char ht_info;	// bit0: 0=20M mode, 1=40M mode; bit1: 0=longGI, 1=shortGI; bit2: 80M mode; bit3: 160M mode
+        unsigned char	RxOperaRate;
+        unsigned char	resv[3];
+        unsigned short	acTxOperaRate;
+
+} WLAN_STA_INFO_T, *WLAN_STA_INFO_Tp;
+
+typedef struct wlan_rate{
+unsigned int id;
+unsigned char rate[20];
+}WLAN_RATE_T, *WLAN_RATE_Tp;
+typedef enum {
+	MCS0=0x80,
+	MCS1=0x81,
+	MCS2=0x82,
+	MCS3=0x83,
+	MCS4=0x84,
+	MCS5=0x85,
+	MCS6=0x86,
+	MCS7=0x87,
+	MCS8=0x88,
+	MCS9=0x89,
+	MCS10=0x8a,
+	MCS11=0x8b,
+	MCS12=0x8c,
+	MCS13=0x8d,
+	MCS14=0x8e,
+	MCS15=0x8f
+	} RATE_11N_T;
+#ifdef WLAN_WDS
+typedef struct wds_type {
+	unsigned char macAddr[6];
+	unsigned int fixedTxRate;
+	unsigned char comment[COMMENT_LEN];
+} __PACK__ WDS_T, *WDS_Tp;
+
+#endif
+#endif // of WLAN_SUPPORT
+
+// Magician: E8B Security
+typedef enum { FW_LOW=0, FW_MIDDLE, FW_HIGH } FIREWALL_GRADE_T;
+typedef enum { WAN_INVALID=0, WAN_BRG, WAN_ROUTE, BRG_RTE} XDSL_MODE_T;
+//typedef enum { MER_ONLY=0, PPPOE_ONLY, PPP_MER} CHANNEL_MODE_T;
+// End Magician
+
+/*
+ * MIB struct
+ */
+typedef struct config_setting {
+	unsigned int wanmode; // Magician: ADSL/ETH Wan switch
+	//unsigned char version;	// config_setting version
+	// TCP/IP stuffs
+	unsigned char ipAddr[IP_ADDR_LEN];
+#ifdef CONFIG_LUNA_DUAL_LINUX
+	unsigned char slaveipAddr[IP_ADDR_LEN];
+	unsigned char masteripAddr[IP_ADDR_LEN];
+#endif
+	unsigned char subnetMask[IP_ADDR_LEN];
+	unsigned char enable_ip2; // 0 - disabled, 1 - enabled
+	unsigned char ipAddr2[IP_ADDR_LEN];
+	unsigned char subnetMask2[IP_ADDR_LEN];
+	unsigned char defaultGateway[IP_ADDR_LEN];
+#ifdef DEFAULT_GATEWAY_V2
+	unsigned int dgwItf; // Jenny, default gateway interface index
+#endif
+	unsigned char dhcp; // DHCP flag, 0 - disabled, 1 - client, 2 - server
+	unsigned char dhcp_pooluse; // DHCP server pool uses on 0 - Primary LAN, 1 - Secondary LAN
+	unsigned char dhcps_dns_opt; // 0: use dnsRelay; 1: use manual setting
+	unsigned char dhcps_dns1[IP_ADDR_LEN];
+	unsigned char dhcps_dns2[IP_ADDR_LEN];
+	unsigned char dhcps_dns3[IP_ADDR_LEN];
+	unsigned char rip; // RIP flag, 0 - disabled, 1 - enabled
+	unsigned char dhcpClientStart; // DHCP client start range
+	unsigned char dhcpClientEnd; // DHCP client end range
+	unsigned char ipDhcpStart[IP_ADDR_LEN];
+	unsigned char ipDhcpEnd[IP_ADDR_LEN];
+	unsigned int dhcpLTime; // DHCP server max lease time in seconds
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	unsigned char dhcpDomain[64]; // DHCP option Domain Name
+#else
+	unsigned char dhcpDomain[MAX_NAME_LEN]; // DHCP option Domain Name
+#endif
+	unsigned char lanAutoSearch;		// the LAN ip auto-search
+
+	// web server account
+	unsigned char userName[MAX_NAME_LEN]; // user name
+	unsigned char userPassword[MAX_NAME_LEN]; // user assword
+	unsigned char deviceType; // bridge: 0 or router: 1
+	unsigned char initLine; // init adsl line on startup
+	unsigned char initScript; // init system with user configuration on startup
+
+	unsigned char wanDhcp; // DHCP flag for WAN port, 0 - disabled, 1 - DHCP client
+	unsigned char wanIpAddr[IP_ADDR_LEN];
+	unsigned char wanSubnetMask[IP_ADDR_LEN];
+	unsigned char wanDefaultGateway[IP_ADDR_LEN];
+	unsigned char pppUserName[MAX_NAME_LEN];
+	unsigned char pppPassword[MAX_NAME_LEN];
+	unsigned char dnsMode;
+	unsigned char dns1[IP_ADDR_LEN], dns2[IP_ADDR_LEN], dns3[IP_ADDR_LEN];
+	unsigned char dhcps[IP_ADDR_LEN];
+	unsigned char dhcpMode; // 0 - None, 1 - DHCP Relay, 2 - DHCP Server
+	unsigned short pppIdleTime;
+	unsigned char pppConnectType;
+
+	unsigned char adslConnectionMode;
+	unsigned char adslEncapMode;
+	unsigned short adslMode;	// 1: ANSI T1.413, 2: G.dmt, 3: multi-mode, 4: ADSL2, 8: AnnexL, 16: ADSL2+
+	unsigned char adslOlr;	// adsl capability, 0: disable 1: bitswap 3: SRA & bitswap
+	unsigned char ripEnabled;
+	unsigned char ripVer;	// rip version. 0: v1, 1: v2, 2: v1 compatibility
+#ifdef CONFIG_USER_ZEBRA_OSPFD_OSPFD
+	unsigned char ospfEnabled;	//ql_xu-- enable ospf
+#endif
+
+	unsigned char atmLoopback;
+	unsigned char atmMode;
+	unsigned char atmVcSwitch;
+	unsigned char atmMac1[MAC_ADDR_LEN];
+	unsigned char atmMac2[MAC_ADDR_LEN];
+	unsigned char atmVcAutoSearch;		// the very first pvc auto-search
+
+	unsigned char ipfOutAction; // 0 - Deny, 1 - Allow
+	unsigned char ipfInAction; // 0 - Deny, 1 - Allow
+	unsigned char macfOutAction; // 0 - Deny, 1 - Allow
+	unsigned char macfInAction; // 0 - Deny, 1 - Allow
+	unsigned char portFwEnabled;
+#ifdef NATIP_FORWARDING
+	unsigned char ipFwEnabled;
+#endif
+	unsigned char dmzEnabled;
+	unsigned char dmzHost[IP_ADDR_LEN]; // DMZ host
+#if defined(CONFIG_USER_SNMPD_SNMPD_V2CTRAP) || defined(_CWMP_MIB_)
+	unsigned char snmpSysDescr[SNMP_STRING_LEN];
+#endif //defined(CONFIG_USER_SNMPD_SNMPD_V2CTRAP) || defined(_CWMP_MIB_)
+#ifdef CONFIG_USER_SNMPD_SNMPD_V2CTRAP
+	unsigned char snmpSysContact[SNMP_STRING_LEN];
+	unsigned char snmpSysLocation[SNMP_STRING_LEN];
+	unsigned char snmpSysObjectID[SNMP_STRING_LEN];
+	unsigned char snmpCommunityRO[SNMP_STRING_LEN];
+	unsigned char snmpCommunityRW[SNMP_STRING_LEN];
+	//unsigned char snmpTrapIpAddr[MAC_ADDR_LEN]; // MAC address of LAN port in used
+	unsigned char snmpTrapIpAddr[IP_ADDR_LEN]; // MAC address of LAN port in used
+#endif
+	unsigned char snmpSysName[SNMP_STRING_LEN];
+
+	// Kao
+	unsigned short brctlAgeingTime;
+	unsigned char brctlStp; // Spanning tree protocol flag, 0 - disabled, 1 - enabled
+	unsigned char mpMode; // multi-port admin status: port-mapping, vlan or ipqos
+#ifdef IP_QOS
+	unsigned int qosDefaultQueue;	//defualt queue (instance number)
+	unsigned char qosDomain;	// default qos doamin: ip procedence bits or 802.1p
+#endif
+#ifdef QOS_DIFFSERV
+	unsigned char qosDiffServ;
+	unsigned char phbClass;	// PHB class - 1:AF1; 2:AF2; 3:AF3; 4:AF4; 5:EF
+#endif
+	/*ql:20081114 START: new IP QoS*/
+//#ifdef NEW_IP_QOS_SUPPORT
+#ifdef CONFIG_USER_IP_QOS
+	unsigned int qosUprate;
+	unsigned char  qosPolicy;// 1-gred; 0-other
+	unsigned int TotalBandWidth;
+	unsigned char TotalBandWidthEn; //ql- enable total bandwidth limit
+	unsigned char qosmode;// 1:qos priority  2:tc shaping
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	unsigned char ip_qos_mandatory_bandwith_en;
+#endif
+#endif
+#if defined(CONFIG_USER_IP_QOS) && defined(_PRMT_X_CT_COM_QOS_)
+	unsigned char ctqosmode[MAX_NAME_LEN]; // EX:INTERNET,VOIP,TR069,IPTV
+	unsigned char qosEnableForceWeight; //0-disable; 1-enable
+	unsigned char qosEnableDscpMark; //0-disable; 1-enable
+
+	unsigned char qosEnable1p; //0-disable; 1-pvc tag; 2-qos tag
+#endif
+	/*ql:20081114 END*/
+#ifdef CONFIG_USER_IGMPPROXY
+	unsigned char igmpProxy; // IGMP proxy flag, 0 - disabled, 1 - enabled
+	unsigned int igmpProxyItf; // IGMP proxy interface index
+#endif
+#ifdef CONFIG_USER_PPTP_CLIENT_PPTP
+	unsigned int pptpenable;
+#endif //end of CONFIG_USER_PPTP_CLIENT_PPTP
+#ifdef CONFIG_USER_L2TPD_L2TPD
+	unsigned int l2tpenable;
+#endif //endof CONFIG_USER_L2TPD_L2TPD
+#ifdef CONFIG_NET_IPIP
+	unsigned int ipipenable;
+#endif//end of CONFIG_NET_IPIP
+#ifdef IP_PASSTHROUGH
+	unsigned int ipptItf; // IP passthrough interface index
+	unsigned int ipptLTime; // IP passthrough max lease time in seconds
+	unsigned char ipptLanacc;	// enable LAN access
+#endif
+	unsigned char spcEnable;	// enable single PC mode
+	unsigned char spcIPType;	// private IP or IP passthrough
+	unsigned char aclcapability;   // ACL capability flag, 0 - disabled, 1 - enabled. Mason Yu
+	unsigned char connlimit;	//nat session number limit, 0 - disabled, 1 - enabled. ql_xu
+#ifdef URL_BLOCKING_SUPPORT
+	unsigned char urlcapability;   // URL capability flag, 0 - disabled, 1 - enabled. Mason Yu ; 2 for url allow
+#endif
+#if defined(CONFIG_APOLLO_MP_TEST)
+	unsigned char mpFinished;	//for MP test
+#endif
+#if defined(CONFIG_RG_SLEEPMODE_TIMER)
+	unsigned char sleepmode_enabled;
+#endif
+	unsigned char tftpServerAddr[254]; // udhcpd OPTION_STRING. Iulian Wu
+	unsigned char posixTzString[254];
+	unsigned char bootFileName[254];
+	unsigned char ntpEnabled;	// ntp client enabled
+	unsigned int ntpTimeZoneDBIndex;// ntp Index of Time Zone Database
+	unsigned char dstEnabled;	// Daylight Saving Time enabled
+	unsigned char ntpServerHost1[MAX_NAME_LEN]; // ntp server host address
+	unsigned char ntpServerHost2[MAX_NAME_LEN]; // ntp server host address
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	unsigned char ntpServerHost3[MAX_NAME_LEN]; // ntp server host address
+	unsigned char ntpServerHost4[MAX_NAME_LEN]; // ntp server host address
+	unsigned char ntpServerHost5[MAX_NAME_LEN]; // ntp server host address
+#endif
+	unsigned char ntpIfType;	// ntp server interface type used for update
+	unsigned int ntpIfWan;		// ntp server interface used for update
+	unsigned int ntpInterval;	// ntp server update interval
+	unsigned char upnp; 		// UPNP flag, 0 - disabled, 1 - enabled
+	unsigned int upnpExtItf;   	// UPNP Binded WAN interface index
+	//unsigned char upnpNat;	// UPNP NAT Traversal, 0 - disabled, 1-enabled
+#ifdef DOMAIN_BLOCKING_SUPPORT
+	unsigned char domainblkcap;    // Domain capability flag, 0 - disabled, 1 - enabled. Mason Yu
+#endif
+#ifdef CONFIG_IGMP_FORBID
+         unsigned char igmpforbidEnable;//igmp forbid capability flag,0 -disabled, 1 -enabled.alex_huang
+#endif
+#ifdef CONFIG_USER_MINIDLNA		// Mason Yu. use table not chain
+	unsigned int dmsenable;
+#endif//end of CONFIG_USER_MINIDLNA
+
+#if defined(NEW_IP_QOS_SUPPORT) || defined(CONFIG_USER_IP_QOS_3)
+	unsigned char qosEnableQos; // QoS Enable
+#endif
+
+
+#ifdef WLAN_SUPPORT
+	unsigned char wifi_module_disabled;
+#ifdef WIFI_TIMER_SCHEDULE
+	unsigned int wifi_ssid_enable_status;
+#endif
+#ifdef WLAN_RATE_PRIOR
+	unsigned char wlan_rate_prior;
+#endif
+	// WLAN stuffs
+	unsigned char ssid[MAX_SSID_LEN]; // SSID
+	unsigned char auto_channel; // auto channel 0 - disabled, 1 - enabled
+	unsigned char channel;// current channel
+//	unsigned char elanMacAddr[6]; // Ethernet Lan MAC address
+	unsigned char wlanMacAddr[6]; // WLAN MAC address
+	unsigned char wep; // WEP flag, 0 - disabled, 1 - 64bits, 2 128 bits
+	unsigned char wep64Key1[WEP64_KEY_LEN];
+	unsigned char wep64Key2[WEP64_KEY_LEN];
+	unsigned char wep64Key3[WEP64_KEY_LEN];
+	unsigned char wep64Key4[WEP64_KEY_LEN];
+	unsigned char wep128Key1[WEP128_KEY_LEN];
+	unsigned char wep128Key2[WEP128_KEY_LEN];
+	unsigned char wep128Key3[WEP128_KEY_LEN];
+	unsigned char wep128Key4[WEP128_KEY_LEN];
+	unsigned char wepDefaultKey;
+	unsigned char wepKeyType;
+	unsigned short fragThreshold;
+	unsigned short rtsThreshold;
+	unsigned short supportedRates;
+	unsigned short basicRates;
+	unsigned short beaconInterval;
+	unsigned char preambleType; // preamble type, 0 - long preamble, 1 - short preamble
+	unsigned char authType; // authentication type, 0 - open-system, 1 - shared-key, 2 - both
+#ifdef WLAN_ACL
+	unsigned char acEnabled; // enable/disable WLAN access control
+#endif
+
+	unsigned char hiddenSSID;
+	unsigned char wlanDisabled; // enabled/disabled wlan interface
+	unsigned char txPower; // TxPower 15/30/60 mW. Mason Yu
+	unsigned char txPower_high;
+	unsigned long inactivityTime; // wlan client inactivity time
+	unsigned char rateAdaptiveEnabled; // enable/disable rate adaptive
+	unsigned long guest_ssid_endtime; // time to call func_off for crontab
+	unsigned char guest_ssid; // 0: not exist 1~4:single-band 1~8:dual-band
+	unsigned int guest_ssid_duration; // time to disconnect this guest ssid (min)
+	unsigned char dtimPeriod; // DTIM period
+	unsigned char wlanMode; // wireless mode - AP, Ethernet bridge
+	unsigned char networkType; // adhoc or Infrastructure
+
+#ifdef WLAN_WPA
+	unsigned char encrypt; // encrypt type, defined as ENCRYPT_t
+	unsigned char enableSuppNonWpa; // enable/disable nonWPA client support
+	unsigned char suppNonWpa; // which kind of non-wpa client is supported (wep/1x)
+	unsigned char wpaAuth; // WPA authentication type (auto or psk)
+	unsigned char wpaCipher; // WPA unicast cipher suite
+	unsigned char wpaPSK[MAX_PSK_LEN+1]; // WPA pre-shared key
+	unsigned long wpaGroupRekeyTime; // group key rekey time in second
+	unsigned char rsIpAddr[4]; // radius server IP address
+	unsigned short rsPort; // radius server port number
+	unsigned char rsPassword[MAX_PSK_LEN+1]; // radius server password
+	unsigned char enable1X; // enable/disable 802.1x
+	unsigned char wpaPSKFormat; // PSK format 0 - passphrase, 1 - hex
+	unsigned char accountRsEnabled; // enable/disable accounting server
+	unsigned char accountRsIpAddr[4]; // accounting radius server IP address
+	unsigned short accountRsPort; // accounting radius server port number
+	unsigned char accountRsPassword[MAX_RS_PASS_LEN]; // accounting radius server password
+	unsigned char accountRsUpdateEnabled; // enable/disable accounting server update
+	unsigned short accountRsUpdateDelay; // account server update delay time in sec
+	unsigned char macAuthEnabled; // mac authentication enabled/disabled
+	unsigned char rsMaxRetry; // radius server max try
+	unsigned short rsIntervalTime; // radius server timeout
+	unsigned char accountRsMaxRetry; // accounting radius server max try
+	unsigned short accountRsIntervalTime; // accounting radius server timeout
+	unsigned char wpa2Cipher; // wpa2 Unicast cipher
+#endif
+
+#ifdef WLAN_WDS
+	unsigned char wdsEnabled; // wds enable/disable
+	unsigned char wdsNum; // number of wds entry existed
+	WDS_T wdsArray[MAX_WDS_NUM]; // wds array
+	unsigned char wdsWep; // WEP flag, 0 - disabled, 1 - 64bits, 2 128 bits
+	unsigned char wdsEncrypt;
+	unsigned char wdsWepFormat;
+	unsigned char wdsWepKey[WEP128_KEY_LEN*2 + 1];
+	unsigned char wdsPskFormat;
+	unsigned char wdsPsk[MAX_PSK_LEN+1];
+	unsigned char wdsWepDefaultKey;
+	unsigned char wdsWepKeyType;
+#endif
+
+	unsigned char wlanPrivacyChk; // enable/disable wlan privacy check
+	unsigned char blockRelay; // block/un-block the relay between wireless client
+	unsigned char BlockEth2Wir; // block/un-block ethernet to wireless
+	unsigned char maccloneEnabled; // enable NAT2.5 MAC Clone
+	unsigned char itfGroup;		// wlan0 interface group
+#ifdef WLAN_MBSSID
+	unsigned char BlockMbssid; // block/un-block between MBSSID
+#endif
+
+	unsigned char wlanProtectionDisabled;
+	unsigned char wlanAggregation;
+	unsigned char wlanShortGIEnabled;
+	unsigned char wlanContrlBand;
+	unsigned char wlanChannelWidth;
+	unsigned char wlan11nCoexist;
+
+#ifdef CONFIG_RTL_WAPI_SUPPORT
+	unsigned char wapiPsk[MAX_PSK_LEN+1]; //password
+	unsigned char wapiPskLen; //password
+	unsigned char wapiAuth;//0:AS 1:pre-shared key
+	unsigned char wapiPskFormat; // WAPI unicast cipher suite
+	unsigned char wapiAsIpAddr[4]; // as server IP address
+	unsigned char wapiMcastkey; //0:time 1 packets
+	unsigned long wapiMcastRekeyTime; // 300 -31536000
+	unsigned long wapiMcastRekeyPackets; //1048576
+	unsigned char wapiUcastkey; //0:time 1 packets
+	unsigned long wapiUcastRekeyTime; // 300 -31536000
+	unsigned long wapiUcastRekeyPackets; //1048576//internal use
+	unsigned char wapiSearchCertInfo[32]; //search info
+	unsigned char wapiSearchIndex; // search type index
+	unsigned char wapiCAInit; //init CA
+#endif
+
+#ifdef WLAN_WEB_REDIRECT //jiunming,web_redirect
+	unsigned char WlanWebRedirURL[MAX_URL_LEN];     //url
+#endif
+	unsigned char wlanBand; // wlan band, bit0-11B, bit1-11G, bit2-11A
+	unsigned int fixedTxRate; // fixed wlan tx rate, used when rate adaptive is disabled
+
+#ifdef CONFIG_USB_RTL8187SU_SOFTAP
+	unsigned short mlcstRate;	//cathy, for multicast rate setting, 0:auto, bit 0-11 setting is same as fixedTxRate
+#endif
+#ifdef WLAN_QoS
+	unsigned char wlanqos;	//wlan QoS(WMM) switch
+#endif
+#ifdef WLAN_LIFETIME
+	unsigned int wlanlifetime;
+#endif
+	unsigned char wlanDIG;	//wlan DIG (Dynamic Initial Gain) enable flag
+	unsigned char wlanBcnAdvtisement; //wlan Beacon Advertisement
+	unsigned char wifitest; //wlan test
+#ifdef WLAN_UNIVERSAL_REPEATER
+	// for wlan0 interface
+	unsigned char repeaterEnabled1; // universal repeater enable/disable
+	unsigned char repeaterSSID1[MAX_SSID_LEN];  // ssid on virtual interface
+
+	// for wlan1 interface
+	unsigned char repeaterEnabled2; // universal repeater enable/disable
+	unsigned char repeaterSSID2[MAX_SSID_LEN];  // ssid on virtual interface
+#endif
+
+#if defined(CONFIG_RTL_92D_SUPPORT)
+	unsigned char wlanBand2G5GSelect_single; //0:5G, 1:2G
+	unsigned char wlanBand2G5GSelect;	//0:2G+5G, 1:SINGLE
+#endif
+	unsigned char phyBandSelect;	//wlan0: 0:off, 1:2G, 2:5G
+#if defined(CONFIG_RTL_92D_SUPPORT)
+	unsigned char macPhyMode;	//0:SMACSPHY, 1:DMACSPHY, 2:DMACDPHY
+#endif
+#if defined(CONFIG_RTL_92D_SUPPORT) || defined(WLAN_DUALBAND_CONCURRENT)
+	unsigned char wlan1_phyBandSelect;	//wlan1: 0:off, 1:2G, 2:5G
+#if defined(CONFIG_RTL_92D_SUPPORT)
+	unsigned char wlan1_macPhyMode;	//0:SMACSPHY, 1:DMACSPHY, 2:DMACDPHY
+#endif
+#ifdef WLAN_RATE_PRIOR
+	unsigned char wlan1_rate_prior;
+#endif
+	unsigned char wlan1_ssid[MAX_SSID_LEN]; // SSID
+	unsigned char wlan1_auto_channel;// auto channel, 0 - disabled, 1 - enabled
+	unsigned char wlan1_channel;// current channel
+	unsigned char wlan1_wep; // WEP flag, 0 - disabled, 1 - 64bits, 2 128 bits
+	unsigned char wlan1_wep64Key1[WEP64_KEY_LEN];
+	unsigned char wlan1_wep64Key2[WEP64_KEY_LEN];
+	unsigned char wlan1_wep64Key3[WEP64_KEY_LEN];
+	unsigned char wlan1_wep64Key4[WEP64_KEY_LEN];
+	unsigned char wlan1_wep128Key1[WEP128_KEY_LEN];
+	unsigned char wlan1_wep128Key2[WEP128_KEY_LEN];
+	unsigned char wlan1_wep128Key3[WEP128_KEY_LEN];
+	unsigned char wlan1_wep128Key4[WEP128_KEY_LEN];
+	unsigned char wlan1_wepDefaultKey;
+	unsigned char wlan1_wepKeyType;
+	unsigned short wlan1_fragThreshold;
+	unsigned short wlan1_rtsThreshold;
+	unsigned short wlan1_supportedRates;
+	unsigned short wlan1_basicRates;
+	unsigned short wlan1_beaconInterval;
+	unsigned char wlan1_preambleType; // preamble type, 0 - long preamble, 1 - short preamble
+	unsigned char wlan1_authType; // authentication type, 0 - open-system, 1 - shared-key, 2 - both
+#ifdef WLAN_ACL
+	unsigned char wlan1_acEnabled; // enable/disable WLAN access control
+#endif
+	unsigned char wlan1_hiddenSSID;
+	unsigned char wlan1_wlanDisabled; // enabled/disabled wlan interface
+	unsigned char wlan1_txPower; // TxPower 15/30/60 mW. Mason Yu
+	unsigned char wlan1_txPower_high;
+	unsigned long wlan1_inactivityTime; // wlan client inactivity time
+	unsigned char wlan1_rateAdaptiveEnabled; // enable/disable rate adaptive
+	unsigned long wlan1_guest_ssid_endtime; // time to call func_off for crontab
+	unsigned char wlan1_guest_ssid; // 0: not exist 1~4:single-band 1~8:dual-band
+	unsigned int wlan1_guest_ssid_duration; // time to disconnect this guest ssid (min)
+	unsigned char wlan1_dtimPeriod; // DTIM period
+	unsigned char wlan1_wlanMode; // wireless mode - AP, Ethernet bridge
+	unsigned char wlan1_networkType; // adhoc or Infrastructure
+
+#ifdef WLAN_WPA
+	unsigned char wlan1_encrypt; // encrypt type, defined as ENCRYPT_t
+	unsigned char wlan1_enableSuppNonWpa; // enable/disable nonWPA client support
+	unsigned char wlan1_suppNonWpa; // which kind of non-wpa client is supported (wep/1x)
+	unsigned char wlan1_wpaAuth; // WPA authentication type (auto or psk)
+	unsigned char wlan1_wpaCipher; // WPA unicast cipher suite
+	unsigned char wlan1_wpaPSK[MAX_PSK_LEN+1]; // WPA pre-shared key
+	unsigned long wlan1_wpaGroupRekeyTime; // group key rekey time in second
+	unsigned char wlan1_macAuthEnabled; // mac authentication enabled/disabled
+#ifdef WLAN_1x
+	unsigned char wlan1_rsIpAddr[4]; // radius server IP address
+	unsigned short wlan1_rsPort; // radius server port number
+	unsigned char wlan1_rsPassword[MAX_PSK_LEN+1]; // radius server password
+	unsigned char wlan1_enable1X; // enable/disable 802.1x
+	unsigned char wlan1_accountRsEnabled; // enable/disable accounting server
+	unsigned char wlan1_accountRsIpAddr[4]; // accounting radius server IP address
+	unsigned short wlan1_accountRsPort; // accounting radius server port number
+	unsigned char wlan1_accountRsPassword[MAX_RS_PASS_LEN]; // accounting radius server password
+	unsigned char wlan1_accountRsUpdateEnabled; // enable/disable accounting server update
+	unsigned short wlan1_accountRsUpdateDelay; // account server update delay time in sec
+	unsigned char wlan1_rsMaxRetry; // radius server max try
+	unsigned short wlan1_rsIntervalTime; // radius server timeout
+	unsigned char wlan1_accountRsMaxRetry; // accounting radius server max try
+	unsigned short wlan1_accountRsIntervalTime; // accounting radius server timeout
+#endif
+	unsigned char wlan1_wpaPSKFormat; // PSK format 0 - passphrase, 1 - hex
+	unsigned char wlan1_wpa2Cipher; // wpa2 Unicast cipher
+#endif
+#ifdef WLAN_WDS
+	unsigned char wlan1_wdsEnabled; // wds enable/disable
+	unsigned char wlan1_wdsNum; // number of wds entry existed
+	WDS_T wlan1_wdsArray[MAX_WDS_NUM]; // wds array
+	unsigned char wlan1_wdsWep; // WEP flag, 0 - disabled, 1 - 64bits, 2 128 bits
+	unsigned char wlan1_wdsEncrypt;
+	unsigned char wlan1_wdsWepFormat;
+	unsigned char wlan1_wdsWepKey[WEP128_KEY_LEN*2 + 1];
+	unsigned char wlan1_wdsPskFormat;
+	unsigned char wlan1_wdsPsk[MAX_PSK_LEN+1];
+#endif
+	unsigned char wlan1_blockRelay; // block/un-block the relay between wireless client
+	unsigned char wlan1_BlockEth2Wir; // block/un-block ethernet to wireless
+	unsigned char wlan1_itfGroup;		// wlan0 interface group
+#ifdef WLAN_MBSSID
+	unsigned char wlan1_BlockMbssid; // block/un-block between MBSSID
+#endif
+	unsigned char wlan1_wlanProtectionDisabled;
+	unsigned char wlan1_wlanAggregation;
+	unsigned char wlan1_wlanShortGIEnabled;
+	unsigned char wlan1_wlanContrlBand;
+	unsigned char wlan1_wlanChannelWidth;
+	unsigned char wlan1_wlan11nCoexist;
+
+#ifdef CONFIG_RTL_WAPI_SUPPORT
+	unsigned char wlan1_wapiPsk[MAX_PSK_LEN+1]; //password
+	unsigned char wlan1_wapiPskLen; //password
+	unsigned char wlan1_wapiAuth;//0:AS 1:pre-shared key
+	unsigned char wlan1_wapiPskFormat; // WAPI unicast cipher suite
+	unsigned char wlan1_wapiAsIpAddr[4]; // as server IP address
+	unsigned char wlan1_wapiMcastkey; //0:time 1 packets
+	unsigned long wlan1_wapiMcastRekeyTime; // 300 -31536000
+	unsigned long wlan1_wapiMcastRekeyPackets; //1048576
+	unsigned char wlan1_wapiUcastkey; //0:time 1 packets
+	unsigned long wlan1_wapiUcastRekeyTime; // 300 -31536000
+	unsigned long wlan1_wapiUcastRekeyPackets; //1048576//internal use
+	unsigned char wlan1_wapiSearchCertInfo[32]; //search info
+	unsigned char wlan1_wapiSearchIndex; // search type index
+	unsigned char wlan1_wapiCAInit; //init CA
+#endif
+
+#ifdef WLAN_WEB_REDIRECT //jiunming,web_redirect
+	unsigned char wlan1_WlanWebRedirURL[MAX_URL_LEN];     //url
+#endif
+	unsigned char wlan1_wlanBand; // wlan band, bit0-11B, bit1-11G, bit2-11A
+	unsigned int wlan1_fixedTxRate;
+#ifdef WLAN_QoS
+	unsigned char wlan1_wlanqos;	//wlan QoS(WMM) switch
+#endif
+#ifdef WLAN_LIFETIME
+	unsigned int wlan1_wlanlifetime;
+#endif
+	unsigned char wlan1_wlanDIG;	//wlan DIG (Dynamic Initial Gain) enable flag
+	unsigned char wlan1_wlanBcnAdvtisement; //wlan Beacon Advertisement
+	unsigned char	wlan1_wlan_mac_ctrl;
+	#ifdef CONFIG_WIFI_SIMPLE_CONFIG// WPS def WIFI_SIMPLE_CONFIG
+	#define PIN_LEN                                 8
+	unsigned char wlan1_wscDisable;
+	unsigned char wlan1_wscMethod;
+	unsigned char wlan1_wscAuth;
+	unsigned char wlan1_wscEnc;
+	unsigned char wlan1_wscManualEnabled;
+	unsigned char wlan1_wscUpnpEnabled;
+	unsigned char wlan1_wscRegistrarEnabled;
+	unsigned char wlan1_wscSsid[MAX_SSID_LEN];
+	unsigned char wlan1_wscPsk[MAX_PSK_LEN+1];
+	unsigned char wlan1_wscConfigByExtReg;
+	#endif
+#ifdef WLAN_MBSSID
+	unsigned char wlan1_itfGroupVap0;		// wlan0-vap0 interface group
+	unsigned char wlan1_itfGroupVap1;		// wlan0-vap1 interface group
+	unsigned char wlan1_itfGroupVap2;		// wlan0-vap2 interface group
+	unsigned char wlan1_itfGroupVap3;		// wlan0-vap3 interface group
+#endif
+
+#ifdef WLAN_QoS
+	unsigned char wlan1_wlanqos_apsd;	//wlan QoS_APSD(WMM) switch
+#endif
+#endif //CONFIG_RTL_92D_SUPPORT || WLAN_DUALBAND_CONCURRENT
+
+#ifdef WLAN_WPS_VAP
+	unsigned char wps_enable;
+	unsigned char wps_ssid;
+	unsigned int wps_timeout;
+#endif
+
+#ifdef WLAN_DUALBAND_CONCURRENT
+#ifdef CONFIG_RTL_STA_CONTROL_SUPPORT
+	unsigned char wifi_sta_control;
+	unsigned char wlan_bandst_enable;
+	int wlan_bandst_rssthrdhigh;
+	int wlan_bandst_rssthrdlow;
+	unsigned int wlan_bandst_channelusethrd;
+	unsigned int wlan_bandst_steeringinterval;
+	unsigned int wlan_bandst_staloadthreshold2g;
+#endif
+#endif
+	unsigned char wlan_site_survey_time;
+#endif	// of WLAN_SUPPORT
+	// Jenny, system log
+	unsigned char syslogslevel;	// system log log level
+	unsigned char syslogdlevel;	// system log display level
+#ifdef CONFIG_USER_RTK_SYSLOG_REMOTE
+	unsigned char syslogmode;	// system log mode
+	unsigned char syslogServerIpAddr[IP_ADDR_LEN];     // remote syslog server IP address
+	unsigned short syslogServerPort; // remote syslog server port number
+#endif
+	// Added by Mason Yu for write superUser into Current Setting
+	unsigned char suserName[MAX_NAME_LEN];     // user name
+	unsigned char suserPassword[MAX_NAME_LEN]; // user assword
+	unsigned char e8bduserName[MAX_NAME_LEN];     // user name
+	unsigned char e8bduserPassword[MAX_NAME_LEN]; // user assword
+	unsigned char resetPassword[MAX_NAME_LEN]; // reset password
+	unsigned int functionMask;
+
+	unsigned char DirectBridgeMode; // ioctl for direct bridge mode, jiunming
+
+	unsigned char pppoeACMacAddr[MAC_ADDR_LEN];	// Jenny, PPPoE AC MAC address
+	unsigned short pppoeSession;	// Jenny,identifier for PPPoE session
+
+#ifdef _CWMP_MIB_ /*jiunming, mib for cwmp-tr069*/
+	unsigned char	cwmp_ProvisioningCode[64];
+	unsigned char	cwmp_ACSURL[256+1];
+	unsigned char	cwmp_ACSURL_OLD[256+1];
+	unsigned char	cwmp_ACSUserName[256+1];
+	unsigned char	cwmp_ACSPassword[256+1];
+	unsigned char	cwmp_InformEnable;
+	unsigned int	cwmp_InformInterval;
+	unsigned int	cwmp_InformTime;
+	unsigned char	cwmp_ConnReqUserName[256+1];
+	unsigned char	cwmp_ConnReqPassword[256+1];
+	unsigned char	cwmp_UpgradesManaged;
+	unsigned char	cwmp_LANConfPassword[64];
+	unsigned char	cwmp_SerialNumber[64];
+	unsigned char	cwmp_DHCP_ServerConf;
+	unsigned char	cwmp_LAN_IPIFEnable;
+	unsigned char	cwmp_LAN_EthIFEnable;
+	unsigned char	cwmp_WLAN_BasicEncry; /*0:none, 1:Wep*/
+	unsigned char	cwmp_WLAN_WPAEncry; /*0:tkip, 1:aes, 2:tkip&aes*/
+	unsigned char	cwmp_DL_CommandKey[32+1];
+	unsigned int	cwmp_DL_StartTime;
+	unsigned int	cwmp_DL_CompleteTime;
+	unsigned int	cwmp_DL_FaultCode;
+	unsigned int	cwmp_Inform_EventCode;
+	unsigned int	cwmp_Inform_User_EventCode;
+	unsigned char	cwmp_RB_CommandKey[32+1];
+	unsigned char	cwmp_ACS_ParameterKey[32+1];
+	unsigned char   cwmp_CERT_Password[64+1];
+	unsigned char	cwmp_Flag;
+/*star:20091228 START add for store parameterkey*/
+	unsigned char cwmp_Parameterkey[32+1];
+/*star:20091228 END*/
+	unsigned char	cwmp_SI_CommandKey[32+1];
+#ifdef CONFIG_USER_CUMANAGEDEAMON
+	unsigned int mgtPort;
+	unsigned int hb;
+	unsigned int ability;
+	unsigned int localPort1;
+	unsigned int localPort2;
+	unsigned char mgtUrl[256+1];
+	unsigned char mgtWanIf[256+1];
+	unsigned char localUserName[16+1];
+	unsigned char localUserPass[32+1];
+	unsigned char localAdminName[16+1];
+	unsigned char localAdminPass[32+1];
+	unsigned char mgtVersion[64];
+	unsigned char cumanag_bootflag;
+	unsigned char lan_acc_enable;
+	unsigned char original_psk[MAX_PSK_LEN+1];
+#ifdef CU_CUMANAGEDEAMON_NEW_SPEC
+	unsigned char province_str[16];
+	unsigned char sharepassword[32+1];
+	unsigned char newspec_enable;
+#endif
+	unsigned char schedule_log_flag;
+#endif
+
+#ifdef _PRMT_USERINTERFACE_
+	unsigned char	 UIF_PW_Required;
+	unsigned char	 UIF_PW_User_Sel;
+	unsigned char	 UIF_Upgrade;
+	unsigned int	 UIF_WarrantyDate;
+	unsigned char	 UIF_AutoUpdateServer[256];
+	unsigned char	 UIF_UserUpdateServer[256];
+#endif //_PRMT_USERINTERFACE_
+#ifdef  _PRMT_X_CT_COM_IPTV_
+	unsigned char	cwmp_CT_IPTV_IGMPEnable;
+	unsigned int	cwmp_CT_IPTV_STBNumber;
+#endif  //_PRMT_X_CT_COM_IPTV_
+#ifdef _PRMT_X_CT_COM_RECON_
+	unsigned char	cwmp_CT_ReCon_Enable;
+#endif //_PRMT_X_CT_COM_RECON_
+#ifdef _PRMT_X_CT_COM_MWBAND_
+	unsigned int	cwmp_CT_MWBAND_Mode;
+	unsigned char	cwmp_CT_MWBAND_STB_Enable;
+	unsigned char	cwmp_CT_MWBAND_CMR_Enable;
+	unsigned char	cwmp_CT_MWBAND_PC_Enable;
+	unsigned char	cwmp_CT_MWBAND_PHN_Enable;
+	unsigned int	cwmp_CT_MWBAND_Number;
+	unsigned char	cwmp_CT_MWBAND_Terminal_Type;	//0: by MAC, 1: By source IP
+	unsigned int	cwmp_CT_MWBAND_STB_Num;
+	unsigned int	cwmp_CT_MWBAND_CMR_Num;
+	unsigned int	cwmp_CT_MWBAND_PC_Num;
+	unsigned int	cwmp_CT_MWBAND_PHN_Num;
+#endif
+#ifdef _PRMT_X_CT_COM_PORTALMNT_
+	unsigned char	cwmp_CT_PM_Enable;
+	unsigned char	cwmp_CT_PM_URL4PC[MAX_URL_LEN];
+	unsigned char	cwmp_CT_PM_URL4STB[MAX_URL_LEN];
+	unsigned char	cwmp_CT_PM_URL4MOBILE[MAX_URL_LEN];
+#endif
+
+#if defined(_PRMT_X_CT_COM_DHCP_)||defined(IP_BASED_CLIENT_TYPE)
+	unsigned char	cwmp_CT_STB_MinAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_STB_MaxAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_PHN_MinAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_PHN_MaxAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_CMR_MinAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_CMR_MaxAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_PC_MinAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_PC_MaxAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_HGW_MinAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_HGW_MaxAddr[IP_ADDR_LEN];
+#endif
+
+#ifdef _PRMT_X_CT_COM_DHCP_
+	unsigned char cwmp_CT_dhcps_opt60;
+	unsigned char cwmp_CT_dhcps_opt125;
+	unsigned char cwmp_CT_dhcp6s_opt16;
+	unsigned char cwmp_CT_dhcp6s_opt17;
+#endif
+
+	unsigned char	cwmp_ACS_KickURL[64];
+	unsigned char	cwmp_ACS_DownloadURL[64];
+	unsigned int 	cwmp_ConnReqPort;
+	unsigned char 	cwmp_ConnReqPath[32];
+	unsigned int	cwmp_Flag2;
+#ifdef _PRMT_TR143_
+	unsigned char	tr143_udpecho_enable;
+	unsigned char	tr143_udpecho_itftype;
+	unsigned char	tr143_udpecho_srcip[4];
+	unsigned short	tr143_udpecho_port;
+	unsigned char	tr143_udpecho_plus;
+#endif //_PRMT_TR143_
+
+#ifdef _PRMT_X_CT_COM_ALARM_MONITOR_
+	unsigned char cwmp_CT_Alarm_Enable;
+	unsigned char cwmp_CT_Monitor_Enable;
+#endif
+
+#ifdef _PRMT_X_CT_COM_USERINFO_
+	unsigned int cwmp_UserInfo_Status;
+	unsigned int cwmp_UserInfo_Limit;
+	unsigned int cwmp_UserInfo_Times;
+	unsigned char cwmp_Reg_Inform_Status;
+#ifdef E8B_NEW_DIAGNOSE
+	unsigned int cwmp_UserInfo_Result;
+	unsigned char cwmp_Needreboot;
+	int cwmp_UserInfo_ServiceNum;
+	unsigned char cwmp_UserInfo_ServiceName[32];
+#endif
+	unsigned char cwmp_UserInfo_ProvisioningCode[32];
+#endif	//_PRMT_X_CT_COM_USERINFO_
+
+#ifdef _PRMT_X_CT_COM_PING_
+	unsigned char cwmp_CT_Ping_Enable;
+#endif
+
+	unsigned char cwmp_Persistent_Data[256];
+	unsigned int cwmp_wan_interface;
+	unsigned char cwmp_configurable;
+#else /*_CWMP_MIB_*/
+#if defined(_PRMT_X_CT_COM_DHCP_)||defined(IP_BASED_CLIENT_TYPE)
+	unsigned char	cwmp_CT_STB_MinAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_STB_MaxAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_PHN_MinAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_PHN_MaxAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_CMR_MinAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_CMR_MaxAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_PC_MinAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_PC_MaxAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_HGW_MinAddr[IP_ADDR_LEN];
+	unsigned char	cwmp_CT_HGW_MaxAddr[IP_ADDR_LEN];
+#endif
+#endif
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU) 
+	unsigned char	cwmp_GUI_PWAUTH_Enable;
+#endif
+
+#ifdef CONFIG_MIDDLEWARE
+	unsigned char	cwmp_TR069_Enable;
+	unsigned char	cwmp_TR069_Enable_Old;
+	unsigned char	cwmp_Midware_Server_Addr[256+1];
+	unsigned char	cwmp_Midware_Server_Addr_Old[256+1];
+	unsigned int	cwmp_Midware_Server_Port;
+	unsigned char	mwInformEvent;
+	unsigned char	midwareFlag;
+#endif
+
+#ifdef _PRMT_X_CT_COM_QOE_
+	unsigned char cwmp_CT_Qoe_Enable;
+	unsigned char cwmp_CT_Qoe_TestDownloadUrl[64+1];
+	unsigned int cwmp_CT_Qoe_Port;
+#endif
+
+#ifdef CONFIG_USER_BEHAVIOR_ANALYSIS
+	unsigned char cwmp_CT_NetMonitor_Switch;
+	unsigned char cwmp_CT_NetMonitor_Type[32];
+	unsigned char cwmp_CT_NetMonitor_Interface[256+1];
+	unsigned char cwmp_CT_NetMonitor_Hostname[256+1];
+	unsigned int cwmp_CT_NetMonitor_DataBlockSize;
+	unsigned int cwmp_CT_NetMonitor_Timerinterval;
+	unsigned int cwmp_CT_NetMonitor_TestRequesTimes;
+	unsigned int cwmp_CT_NetMonitor_StartTime1;
+	unsigned int cwmp_CT_NetMonitor_StartTime2;
+	unsigned int cwmp_CT_NetMonitor_EndTime1;
+	unsigned int cwmp_CT_NetMonitor_EndTime2;
+	unsigned char cwmp_CT_NetMonitor_RESV1[32];
+	unsigned char cwmp_CT_NetMonitor_RESV2[32];
+#endif
+
+#ifdef _PRMT_X_CT_COM_DEVINFO_
+	unsigned char cwmp_CT_IPForwardModeEnabled;
+#endif
+	unsigned char cwmp_delay_restartwan_enable;
+	unsigned int cwmp_delay_restartwan_check_time;
+	unsigned int FirmwareUpgradeMode;
+
+	unsigned char	syslog;
+	unsigned int	maxmsglen;
+	unsigned char	adsldbg;
+
+	unsigned int dos_enable;
+
+#ifdef DOS_SUPPORT
+	unsigned int dos_syssyn_flood;
+	unsigned int dos_sysfin_flood;
+	unsigned int dos_sysudp_flood;
+	unsigned int dos_sysicmp_flood;
+	unsigned int dos_pipsyn_flood;
+	unsigned int dos_pipfin_flood;
+	unsigned int dos_pipudp_flood;
+	unsigned int dos_pipicmp_flood;
+	unsigned int dos_block_time;
+#endif
+	unsigned char	eth_mac_ctrl;
+	unsigned char	wlan_mac_ctrl;
+	unsigned char 	dhcp_GatewayAddr[IP_ADDR_LEN];
+	#ifdef CONFIG_WIFI_SIMPLE_CONFIG// WPS def WIFI_SIMPLE_CONFIG
+	#define PIN_LEN                                 8
+	unsigned char wscDisable;
+	unsigned char wscMethod;
+	unsigned char wscConfigured;
+	unsigned char wscPin[PIN_LEN+1];
+	unsigned char wscAuth;
+	unsigned char wscEnc;
+	unsigned char wscManualEnabled;
+	unsigned char wscUpnpEnabled;
+	unsigned char wscRegistrarEnabled;
+	unsigned char wscSsid[MAX_SSID_LEN];
+	unsigned char wscPsk[MAX_PSK_LEN+1];
+	unsigned char wscConfigByExtReg;
+	unsigned char wscVersion;
+	#endif
+
+#ifdef WLAN_MBSSID
+	unsigned char itfGroupVap0;		// wlan0-vap0 interface group
+	unsigned char itfGroupVap1;		// wlan0-vap1 interface group
+	unsigned char itfGroupVap2;		// wlan0-vap2 interface group
+	unsigned char itfGroupVap3;		// wlan0-vap3 interface group
+#endif
+#ifdef CTC_TELECOM_ACCOUNT
+	unsigned char CTCAccountEnable;
+#endif //CTC_TELECOM_ACCOUNT
+//added by xl_yue
+	unsigned char awifi_province_code;
+#ifdef CONFIG_CT_AWIFI_JITUAN_FEATURE
+#ifdef CONFIG_CT_AWIFI_JITUAN_SMARTWIFI
+	unsigned char	awifi_softver[MAX_SERVERURL_LEN];	
+	unsigned char	awifi_imageurl[MAX_SERVERURL_LEN+1];	
+	unsigned char awifi_lanauthenable;
+	char awifi_reg_server[MAX_SERVERURL_LEN+1];
+	unsigned int awifi_reg_port;
+	char awifi_reg_url[MAX_SERVERURL_LEN+1];
+	char awifi_auth_server[MAX_SERVERURL_LEN+1];
+	unsigned int awifi_auth_port;
+	char awifi_auth_url[MAX_SERVERURL_LEN+1];
+	char awifi_portal_server[MAX_SERVERURL_LEN+1];
+	unsigned int awifi_portal_port;
+	unsigned char awifi_lan1authenable;
+	unsigned char awifi_lan2authenable;
+	unsigned char awifi_lan3authenable;
+	unsigned char awifi_lan4authenable;
+	unsigned char awifi_wlan1authenable;
+	unsigned char	awifi_reporturl[MAX_SERVERURL_LEN+1];	
+	unsigned char	awifi_applyid[MAX_SERVERURL_LEN+1];	
+	unsigned char	awifi_city[MAX_SERVERURL_LEN+1];	
+ #endif
+#endif
+    //added by xl_yue
+
+//alex
+#ifdef IP_QOS
+#define NUM_PKT_PRIO 8
+unsigned char set8021p_prio[NUM_PKT_PRIO];
+unsigned char setpred_prio[NUM_PKT_PRIO];
+#endif
+//add by ramen
+#ifdef CONFIG_IP_NF_ALG_ONOFF
+#ifdef CONFIG_NF_CONNTRACK_FTP
+unsigned char ipAlgFTP;
+#endif
+#ifdef CONFIG_NF_CONNTRACK_TFTP
+unsigned char ipAlgTFTP;
+#endif
+#ifdef CONFIG_NF_CONNTRACK_H323
+unsigned char ipAlgH323;
+#endif
+#ifdef CONFIG_NF_CONNTRACK_IRC
+unsigned char ipAlgIRC;
+#endif
+#ifdef CONFIG_NF_CONNTRACK_RTSP
+unsigned char ipAlgRTSP;
+#endif
+#ifdef CONFIG_NF_CONNTRACK_QUAKE3
+unsigned char ipAlgQUAKE3;
+#endif
+#ifdef CONFIG_NF_CONNTRACK_CUSEEME
+unsigned char ipAlgCUSEEME;
+#endif
+#ifdef CONFIG_NF_CONNTRACK_L2TP
+unsigned char ipAlgL2TP;
+#endif
+#ifdef CONFIG_NF_CONNTRACK_IPSEC
+unsigned char ipAlgIPSEC;
+#endif
+#ifdef CONFIG_NF_CONNTRACK_SIP
+unsigned char ipAlgSIP;
+#endif
+#ifdef CONFIG_NF_CONNTRACK_PPTP
+unsigned char ipAlgPPTP;
+#endif
+#endif
+//add by ramen
+#ifdef DNS_BIND_PVC_SUPPORT
+
+unsigned char dns1PvcEnable;
+unsigned int dns1PvcIfIndex;
+unsigned int dns2PvcIfIndex;
+unsigned int dns3PvcIfIndex;
+#endif
+//add by ramen
+#ifdef QOS_SPEED_LIMIT_SUPPORT
+unsigned int upbandwidth;
+#endif
+
+	unsigned char addressMapType; //
+	unsigned char lsip[IP_ADDR_LEN];
+	unsigned char leip[IP_ADDR_LEN];
+	unsigned char gsip[IP_ADDR_LEN];
+	unsigned char geip[IP_ADDR_LEN];
+
+#ifdef CONFIG_USER_SAMBA
+	unsigned char samba_enable;
+#ifdef CONFIG_USER_NMBD
+	unsigned char samba_netbios_name[MAX_SAMBA_NETBIOS_NAME_LEN];
+#endif
+	unsigned char samba_server_string[MAX_SAMBA_SERVER_STRING_LEN];
+#endif
+
+#ifdef ELAN_LINK_MODE_INTRENAL_PHY
+	unsigned char ethMode;
+#endif
+
+#ifdef CONFIG_USER_RTK_SYSLOG
+#ifdef SEND_LOG
+	unsigned char logServer[IP_ADDR_LEN];
+	unsigned char logNmae[MAX_NAME_LEN];     // user name
+	unsigned char logPassword[MAX_NAME_LEN]; // user assword
+#endif
+#endif
+
+//#ifdef QSETUP_WEB_REDIRECT
+//	unsigned char startRedirect;	// 1: redirect rule set
+//#endif
+#ifdef CONFIG_USER_SNMPD_SNMPD_V2CTRAP
+        	unsigned char snmpdEnabled;    // 0: disable, 1:enable
+#endif
+#ifdef TCP_UDP_CONN_LIMIT
+	unsigned char connlimitEn;	//connection limit enable, 0: disable, 1: enable
+	unsigned int connlimitUdp;		//udp port numbers per user
+	unsigned int connlimitTcp;		//tcpp port numbers per user.
+#endif
+
+#ifdef WEB_REDIRECT_BY_MAC
+	unsigned char WebRedirByMACURL[MAX_URL_LEN];     //url
+	unsigned int landingPageTime; // Time Interval of Landing Page in seconds
+#endif
+
+#ifdef CONFIG_USB_ETH
+	unsigned char usbeth_itfgrp;		// usb0 interface group
+#endif //CONFIG_USB_ETH
+// Mason Yu. combine_1p_4p_PortMapping
+#if (defined( ITF_GROUP_1P) && defined(ITF_GROUP))
+	unsigned char ethitfGroup;
+#endif
+
+//#ifdef DHCPS_POOL_COMPLETE_IP
+	unsigned char dhcpSubnetMask[IP_ADDR_LEN];
+//#endif
+
+#ifdef _SUPPORT_CAPTIVEPORTAL_PROFILE_
+	unsigned char captivePortalEnable;
+	char captivePortalURL[MAX_URL_LEN];
+#endif
+
+#ifdef WLAN_QoS
+	unsigned char wlanqos_apsd;	//wlan QoS_APSD(WMM) switch
+#endif
+	//ql 20090119 START: for imagenio service
+#ifdef IMAGENIO_IPTV_SUPPORT
+	unsigned char dhcpOpchAddr[IP_ADDR_LEN];
+	unsigned short dhcpOpchPort;
+	unsigned char imagenioDns1[IP_ADDR_LEN];
+	unsigned char imagenioDns2[IP_ADDR_LEN];
+#endif
+	//ql 20090119 END
+
+#ifdef CONFIG_IPV6
+#ifdef CONFIG_USER_RADVD
+	unsigned char V6MaxRtrAdvInterval[MAX_RADVD_CONF_LEN];
+	unsigned char V6MinRtrAdvInterval[MAX_RADVD_CONF_LEN];
+	unsigned char V6AdvCurHopLimit[MAX_RADVD_CONF_LEN];
+	unsigned char V6AdvDefaultLifetime[MAX_RADVD_CONF_LEN];
+	unsigned char V6AdvReachableTime[MAX_RADVD_CONF_LEN];
+	unsigned char V6AdvRetransTimer[MAX_RADVD_CONF_LEN];
+	unsigned char V6AdvLinkMTU[MAX_RADVD_CONF_LEN];
+	unsigned char V6prefix_ip[MAX_RADVD_CONF_PREFIX_LEN];
+	unsigned char V6prefix_len[MAX_RADVD_CONF_LEN];
+	unsigned char V6ValidLifetime[MAX_RADVD_CONF_LEN];
+	unsigned char V6PreferredLifetime[MAX_RADVD_CONF_LEN];
+	unsigned char V6SendAdvert; // 0 - off, 1 - on
+	unsigned char V6ManagedFlag; // 0 - off, 1 - on
+	unsigned char V6OtherConfigFlag; // 0 - off, 1 - on
+	unsigned char V6OnLink; // 0 - off, 1 - on
+	unsigned char V6Autonomous; // 0 - off, 1 - on
+	unsigned char V6PrefixMode; // 0 - auto, 1 - manual
+	unsigned char V6PrefixEnable; // 0 - off, 1 - on
+	unsigned char V6RDNSS1[MAX_RADVD_CONF_PREFIX_LEN];
+	unsigned char V6RDNSS2[MAX_RADVD_CONF_PREFIX_LEN];
+	unsigned char V6ULAPrefixEnable; // 0 - off, 1 - on
+	unsigned char V6ULAPrefix[MAX_RADVD_CONF_PREFIX_LEN];
+	unsigned char V6ULAPrefix_len[MAX_RADVD_CONF_LEN];
+	unsigned char V6ULAPrefixValidLifetime[MAX_RADVD_CONF_LEN];
+	unsigned char V6ULAPrefixPreferredLifetime[MAX_RADVD_CONF_LEN];
+#endif
+
+#ifdef CONFIG_USER_DHCPV6_ISC_DHCP411
+	unsigned char dhcpv6s_prefix_length;
+	unsigned char dhcpv6s_range_start[IP6_ADDR_LEN];
+	unsigned char dhcpv6s_range_end[IP6_ADDR_LEN];
+	unsigned int dhcpv6s_default_LTime; // DHCPv6 server default lease time in seconds
+	unsigned int dhcpv6s_preferred_LTime; // DHCPv6 server prefer lease time in seconds
+	unsigned int dhcpv6r_ifIndex; // The ifIndex of upper interface for DHCPv6 relay
+	unsigned char dhcpv6_mode;
+	unsigned int dhcpv6s_renew_time; // DHCPv6 server renew time in seconds
+	unsigned int dhcpv6s_rebind_time; // DHCPv6 server rebind time in seconds
+	unsigned char dhcpv6s_clientID[MAX_DUID_LEN]; // Client DUID for DHCPv6 Server
+#endif
+
+#ifdef CONFIG_USER_ECMH
+	// Mason Yu. MLD Proxy
+	unsigned char mld_proxy_daemon;
+	unsigned int mld_proxy_ext_itf;
+#endif
+
+#ifdef DNSV6_BIND_PVC_SUPPORT
+	unsigned char dnsv6PvcEnable;
+	unsigned int dnsv61PvcIfIndex;
+	unsigned int dnsv62PvcIfIndex;
+	unsigned int dnsv63PvcIfIndex;
+#endif
+
+	unsigned char lanDnsv6Mode;
+	unsigned char dnsv61[IP6_ADDR_LEN];
+	unsigned char dnsv62[IP6_ADDR_LEN];
+	unsigned char dnsv63[IP6_ADDR_LEN];
+	unsigned char v6ipfOutAction; // 0 - Deny, 1 - Allow
+	unsigned char v6ipfInAction;  // 0 - Deny, 1 - Allow
+	unsigned char v6ipv6Enable;   // 0 - Disable, 1 - Enable
+#endif // if CONFIG_IPV6
+#ifdef CONFIG_TR_064
+	unsigned char	tr064_enabled;
+#endif
+
+#ifdef CONFIG_RTK_L34_ENABLE
+	unsigned char macBasedTagDecision;
+	unsigned char dmac2cvid_disable;
+	unsigned char avalanche_enable;
+	unsigned int lan_vlan_id1;
+	unsigned int lan_vlan_id2;
+
+	unsigned int untag_wan_vid;
+	unsigned int fwdvlan_cpu;
+	unsigned int fwdvlan_cpu_svlan;	
+	unsigned int fwdvlan_proto_block; 	//used for IP_version only_mode, as PVID to block traffic to other port
+	unsigned int fwdvlan_bind_internet; //used for LAN to transparent with internet WAN
+	unsigned int fwdvlan_bind_other;	//used for other WAN separate with un-binding ports or internet WAN
+
+
+	unsigned int lan_port_mask1;
+	unsigned int lan_port_mask2;
+	unsigned char lan_ip_version1;
+	unsigned char lan_ip_version2;
+	unsigned char lan_ipv6_mode1;
+	unsigned char lan_ipv6_mode2;
+	unsigned char lan_ipv6_addr1[IP6_ADDR_LEN];
+	unsigned char lan_ipv6_addr2[IP6_ADDR_LEN];
+	unsigned char lan_ipv6_prefix_len1;
+	unsigned char lan_ipv6_prefix_len2;
+#endif
+
+	unsigned char loid[30];
+	unsigned char loid_passwd[32];
+	unsigned char old_loid[30];
+	unsigned char old_loid_passwd[32];
+#if defined(CONFIG_GPON_FEATURE)
+	unsigned char gpon_ploam_passwd[11];
+	unsigned char ngpon_ploam_passwd[37];
+#endif
+#if defined(CONFIG_RTK_OMCI_V1)
+	unsigned char omci_dbglvl;
+	unsigned char omci_logfile;
+	unsigned char omci_port_type;
+	unsigned char dual_mgmt_mode;
+	unsigned int omci_custom_bdp;
+	unsigned int omci_custom_rdp;
+	unsigned int omci_custom_mcast;
+	unsigned int omci_custom_me;
+	unsigned short omci_vpc;	//Vendor Product Code
+	unsigned short omci_fake_ok;
+	unsigned char omci_veip_slotid;
+#endif
+#if defined(CONFIG_RTK_IGMP)
+	unsigned char rtk_igmp_dbgen;
+	unsigned char rtk_igmp_dropv1;
+	unsigned char rtk_igmp_vidtype;
+	unsigned char rtk_igmp_tagdecision;
+#endif
+#ifdef CONFIG_GPON_FEATURE
+	unsigned char vlan_cfg_type;
+	unsigned char vlan_manu_mode;
+	unsigned short vlan_manu_tag_vid;
+	unsigned char vlan_manu_tag_pri;
+	unsigned char omci_olt_mode;
+	unsigned char omci_sw_ver1[32];
+	unsigned char omci_sw_ver2[32];
+	unsigned char omcc_ver;
+	unsigned char omci_tm_opt;
+	unsigned int omci_logfile_mask;
+//	unsigned char omci_vendor_id[5];
+	unsigned int pon_custom_sdk;
+#endif
+#ifdef FTP_ACCOUNT_INDEPENDENT
+	char ftp_server_username[MAX_NAME_LEN];
+	char ftp_server_password[MAX_NAME_LEN];
+#endif
+#ifdef TELNET_ACCOUNT_INDEPENDENT
+	char telnet_server_username[MAX_NAME_LEN];
+	char telnet_server_password[MAX_NAME_LEN];
+#endif
+#ifdef SSH_ACCOUNT_INDEPENDENT
+	char ssh_server_username[MAX_NAME_LEN];
+	char ssh_server_password[MAX_NAME_LEN];
+#endif
+#ifdef TFTP_ACCOUNT_INDEPENDENT
+	char tftp_server_username[MAX_NAME_LEN];
+	char tftp_server_password[MAX_NAME_LEN];
+#endif
+#ifdef SNMP_ACCOUNT_INDEPENDENT
+	char snmp_server_username[MAX_NAME_LEN];
+	char snmp_server_password[MAX_NAME_LEN];
+#endif
+
+#ifdef CONFIG_MULTI_FTPD_ACCOUNT
+	unsigned char ftp_enable;
+	unsigned char ftp_annoymous_enable;
+#endif
+	unsigned char vsftp_enable;
+	unsigned char vsftp_annoymous_enable;
+#ifdef CONFIG_MULTI_SMBD_ACCOUNT
+	unsigned char smb_server_enable;
+	unsigned char smb_annoymous_enable;
+#endif
+	 unsigned int dbusproxy_debug;
+#define FLATFORM_ADDR_LEN 64
+#define FLATFORM_ERR_LEN 256
+#define PROVINCE_CODE_LEN 32
+	unsigned char DistAddr[FLATFORM_ADDR_LEN];
+	unsigned char DistStatus;
+	unsigned char DistErrorMsg[FLATFORM_ERR_LEN];
+	unsigned char OperAddr[FLATFORM_ADDR_LEN];
+	unsigned char OperStatus;
+	unsigned char OperErrorMsg[FLATFORM_ERR_LEN];
+	unsigned char PluginAddr[FLATFORM_ADDR_LEN];
+	unsigned char PluginStatus;
+	unsigned char PluginErrorMsg[FLATFORM_ERR_LEN];
+	unsigned char BssAddr[FLATFORM_ADDR_LEN];
+	unsigned char provincecode[PROVINCE_CODE_LEN];
+
+	unsigned char MemAlarm;
+	unsigned char MemLimit;
+#define DBUS_STRING_LEN 64
+	unsigned char ITMSProtocolVersion[DBUS_STRING_LEN];
+	unsigned char Capability[DBUS_STRING_LEN];
+	unsigned int FlashSize;
+	unsigned int RamSize;
+	unsigned char WiFiMode[DBUS_STRING_LEN];
+#define FLATFORM_VERSION_LEN 32
+#define FLATFORM_SSN_LEN 32
+	unsigned int PlatformService_Port;
+	unsigned int PlatformService_Heartbeat;
+	unsigned int PlatformService_Ability;
+	unsigned int PlatformService_LocalPort;
+	unsigned char PlatformService_Version[FLATFORM_VERSION_LEN];
+	unsigned char PlatformService_SSN[FLATFORM_SSN_LEN];
+	unsigned int restore_status;
+#define HTTPDOWNLOAD_URL_LEN            1024
+	unsigned char  httpdownload_url[HTTPDOWNLOAD_URL_LEN];
+	unsigned char dbus_devname[MAX_DEVNAME_LEN+1];
+#ifdef CONFIG_USER_RTK_OMD
+	unsigned int omdiag_nfconntracknum;
+	unsigned int omdiag_flashthreshold;
+	unsigned int omdiag_cputempthreshold;
+	unsigned int omdiag_pontempthreshold;
+#endif
+
+	char cwmp_mgt_url[256];
+	unsigned int cwmp_mgt_port;
+	unsigned int cwmp_mgt_heartbeat;
+	unsigned int cwmp_mgt_ability;
+	unsigned int cwmp_mgt_locateport;
+	char cwmp_mgt_version[32];
+	unsigned char cwmp_mgt_appmodel;
+	char cwmp_mgt_ssn[64];
+
+	//Magician: E8B security
+	unsigned char fwEnable;
+	unsigned char fwGrade;	//firewall grade: 2- high; 1- middle; 0- low
+	unsigned char macfilter_ebtables_enable;
+	unsigned char macfilter_ebtables_mode;//0--black list 1--white list
+	unsigned char ip_filter_enable;
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	unsigned char ip_filter_in_enable;
+	unsigned char ip_filter_out_enable;
+#endif	
+	unsigned char macfilter_src_enable;
+#ifdef CONFIG_USER_LAN_BANDWIDTH_CONTROL
+	unsigned char lanhost_bandwidth_control_enable;
+#endif
+#ifdef CONFIG_USER_LAN_BANDWIDTH_MONITOR
+	unsigned char lanhost_bandwidth_monitor_enable;
+	unsigned int  lanhost_bandwidth_interval; /*in unit of second*/
+#endif
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	unsigned int storm_control_bit_rate; // The rate unit is 1 kbps and the range is from 8k to 1048568k.
+#endif
+#ifdef SUPPORT_WEB_PUSHUP
+	char downUrl[128];
+	unsigned int upgradeWebPushTime;
+	unsigned int upgradeMode;
+	unsigned int upgradeMethod;
+	char upgradeID[128];
+#endif
+// End Magician
+
+    unsigned int cwmpDlPhase;//0-normal 1-upgrading 2-rebooting 3-upgrade fin
+
+// VPN Connection Related
+#if defined(CONFIG_USER_L2TPD_L2TPD) &&  defined(CONFIG_USER_PPTP_CLIENT_PPTP)
+	int acl_napt_rule_recyc_time;
+#endif
+// End of VPN Connection Related
+#ifdef CONFIG_USER_RTK_ONUCOMM
+	int onucomm_fw_status;
+#endif
+
+#ifdef CONFIG_LED_INDICATOR_TIMER
+	unsigned char led_status;
+#endif
+
+#ifdef CONFIG_SUPPORT_AUTO_DIAG
+	unsigned char autoDiagEnable;
+	unsigned char autoDiagURL[128];
+	unsigned int autoDiagTftpPort;
+#endif
+
+#ifdef _PRMT_USBRESTORE
+	unsigned char usbrestore;
+#endif
+
+#ifdef CONFIG_USER_DDNS
+	unsigned char ddns_enable;
+#endif
+
+#ifdef CONFIG_IPV6
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	unsigned char lanipv6addr[45];
+	unsigned char lanipv6prefix[64];
+#else
+	unsigned char lanipv6addr[MAX_V6_IP_LEN];
+	unsigned char lanipv6prefix[MAX_V6_IP_LEN];
+#endif
+	unsigned char lanipv6prefixlen;
+#endif
+
+#ifdef CONFIG_USER_RTK_LBD
+	unsigned char lbd_enable;
+	unsigned short lbd_ether_type;
+	unsigned int lbd_exist_period;
+	unsigned int lbd_cancel_period;
+#endif
+	// maintain version information
+	unsigned char	rtk_devid_manufacturer[64];
+	unsigned char	rtk_devid_oui[64];
+	unsigned char	rtk_devid_productclass[64];
+	unsigned char	rtk_devinfo_specver[64];
+	unsigned char	rtk_devinfo_swver[64];
+	unsigned char	rtk_devinfo_hwver[64];
+
+	unsigned char	deviceName[MAX_NAME_LEN];
+#if defined(CONFIG_IPV6) && defined(CONFIG_USER_RADVD)
+	unsigned char   V6RadvdEnable; // 0 - off, 1 - on
+#endif
+	unsigned long long cwmp_performance_report_subitem;
+#ifdef CONFIG_USER_CWMP_UPNP_DM
+	unsigned char upnpdm_RMSConfigOver;
+	unsigned char upnpdm_ConfigMode;
+	unsigned char upnpdm_RMSSWConfigOver;
+#endif
+
+#if defined(CONFIG_IPV6) &&  defined(CONFIG_USER_DHCPV6_ISC_DHCP411)
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	unsigned char dhcpv6s_min_address[64]; //for CMCC requirement
+	unsigned char dhcpv6s_max_address[64];
+#else
+	unsigned char dhcpv6s_min_address[20]; //1111:1111:1111:1111 max is 20 bytes
+	unsigned char dhcpv6s_max_address[20];
+#endif
+#endif
+#if defined(CONFIG_IPV6)
+	unsigned char prefix_info_prefix_mode;
+	unsigned int prefixinfo_delegated_wanconn;
+	unsigned int dnsinfo_wanconn;
+#endif
+#ifdef CTC_DNS_SPEED_LIMIT
+	unsigned char dns_limit_action;
+#endif
+#ifdef SUPPORT_WAN_BANDWIDTH_INFO
+	unsigned char bandwidthEnable;
+	unsigned int bandwidthInterval; /*in unit of second*/
+#endif
+#ifdef SUPPORT_WEB_REDIRECT
+	unsigned char welcomeEnable;
+	char welcomeUrl[MAX_URL_LEN];
+	unsigned int welcomeTime; /*in unit of second*/
+	unsigned char redirectIP[IP_ADDR_LEN];
+	unsigned char itmsAddr[IP_ADDR_LEN];
+	char redirectUrl[MAX_URL_LEN];
+	unsigned char redirectEnable;
+#endif
+#ifdef CONFIG_USER_LANNETINFO
+	unsigned char lannetinfo_flag;
+	unsigned char max_lan_host_num;
+	unsigned char max_control_list_num;
+#endif
+#ifdef CONFIG_USER_BEHAVIOR_ANALYSIS
+	unsigned char ba_enable;
+	int ba_periodic;
+	char ba_url[256];
+	char ba_username[64];
+	char ba_password[64];
+	char ba_compress_pwd[64];
+	int ba_flow_export_periodic;
+	unsigned char ba_dev_ctrl_enable;
+	unsigned char ba_flow_stat_enable;
+	unsigned char ba_packet_stat_enable;
+#endif
+	unsigned char psd_enable;
+
+	// multiple province support variable
+	unsigned char province_id;
+	unsigned char province_backdoor_enable;
+	unsigned char province_backdoor_pwdtype;
+    unsigned char province_ponreg_4stagediag;
+    unsigned char province_fwupgrade_pushwebnotify;
+	unsigned char province_fake_ppp_4tr069_wan;
+	unsigned char province_cwmp_inform_type;
+	unsigned char province_8021pcustom_enable;
+	unsigned char province_8021pcustom_priority[32];//order-->internet,other,voice,tr069 "0,5,7,7"
+	unsigned char province_yjyx_samevlan;
+#ifdef RESERVE_KEY_SETTING
+        unsigned char province_reserve_key_setting;
+#endif
+        unsigned char province_no_popup_reg_page;
+        unsigned char province_dev_reg_type;
+        unsigned char province_dhcp_opt60_type;
+        unsigned char province_miscfunc_type;
+        unsigned char province_tr143_max_sampled;       //0: do not sample throughput
+        unsigned char province_tr143_speed_up;          //use multi-thread to do TR-143 diagnostics
+        unsigned char province_tr143_auto_create_wan;   //Auto create interface if no available INTERNET routing WAN
+#ifdef CONFIG_IPV6
+        unsigned char province_bridge_v4v6_filter_disable;
+#endif
+	unsigned char province_trap_pppoe_traffic;
+		unsigned char province_cwmp_performance_report_subitem[8];
+	unsigned char province_skip_server_path_check;
+	unsigned char province_gpon_ploam_pwd_empty_check;	// discard ploam message if ploam password is empty
+	unsigned char province_passauth_withbootstrap;
+	unsigned char province_gpon_fake_running;
+#ifdef CONFIG_EPON_FEATURE
+		unsigned char oamCtrlTr069; // 0: disable, 1: enable oam to config tr069 wan
+#endif
+	unsigned char province_mac_filter_src_whitelist;
+	unsigned int province_sichuan_reset_button;
+	unsigned char province_sichuan_procfg;
+#ifdef _PRMT_X_CT_COM_LANBINDING_CONFIG_
+		int province_sichuan_lan_bingding_flag;
+#endif
+	unsigned char province_cwmp_reset_as_factory_reset;
+	unsigned char province_igmp_pppoe_passthrough_learn; //for multicast bridge pppoe passthrough
+	unsigned char province_wan_ring_check_eth_type;
+	unsigned char province_sichuan_e8c_backdoor_enable; 
+	unsigned char province_disable_mcast_ingress_vlan_filter;
+	unsigned char province_fujian_voice_register_dhcp_interval;
+    unsigned char province_sichuan_cwmp_SC_CT_COM_;
+    unsigned char province_sichuan_cwmp_IPOE_DIAGNOSTICS;
+#ifdef STB_L2_FRAME_LOSS_RATE
+	unsigned char province_sichuan_stb_frame_loss_rate;
+	unsigned int province_sichuan_stb_test_period;
+	unsigned int province_sichuan_stb_test_frequency;
+#endif
+	unsigned char province_sichuan_wlan_survey_time;
+	unsigned char province_sichuan_wlan_auto_ch_timeout;
+	unsigned char province_sichuan_wlan_ssid_chianet;
+	unsigned char province_sichuan_cwmp_wlanvap_enable;
+#ifdef _PRMT_X_CT_COM_MULTICAST_DIAGNOSIS_
+	unsigned char province_sichuan_cwmp_MC_DIAG; // For CWMP multicast Diagnosis 
+#endif
+	unsigned char province_macfilter_whitelist_local_allow;
+#ifdef _PRMT_X_CT_SUPPER_DHCP_LEASE_SC
+	unsigned char province_sichuan_supper_dhcp_lease;
+#endif
+#ifdef _PRMT_X_CT_ACCESS_EQUIPMENTMAC
+	unsigned char province_sichuan_cwmp_access_equipment;
+#endif
+	unsigned char province_sichuan_lightswitch_state;
+
+#if (defined(CONFIG_CMCC) || defined(CONFIG_CU)) && defined(CONFIG_USER_LANNETINFO)
+	unsigned char province_auto_add_hostcustomise_obj;
+#endif
+
+#ifdef CONFIG_USER_CTMANAGEDEAMON
+	unsigned int bucpe_success_task;
+	unsigned int bucpe_fail_task;
+	unsigned int bucpe_fail_inform;
+	unsigned int bucpe_success_inform;
+	unsigned int bucpe_fail_result;
+	unsigned int bucpe_success_result;
+	unsigned int bucpe_lastInformTime;
+	unsigned int bucpe_diag_timer;
+	unsigned int bucpe_diag_cycle;
+	unsigned char bucpe_speed_url[256];
+	unsigned char bucpe_speed_url_bak[256];
+	unsigned char bucpe_trace_url[256];
+	int bucpe_A_location_ok;
+	char bucpe_A_location_longitude[16];
+	char bucpe_A_location_latitude[16];
+	short bucpe_A_location_altitude;
+	unsigned short bucpe_A_location_HorizontalError;
+	unsigned short bucpe_A_location_AltitudeError;
+	unsigned char bucpe_A_GISInterface;
+	unsigned char bucpe_A_AreaCode[30];
+	unsigned int bucpe_A_GISLockTime;
+	unsigned char bucpe_A_GISDigest[30];
+	int bucpe_B_location_ok;
+	char bucpe_B_location_longitude[16];
+	char bucpe_B_location_latitude[16];
+	short bucpe_B_location_altitude;
+	unsigned short bucpe_B_location_HorizontalError;
+	unsigned short bucpe_B_location_AltitudeError;
+	unsigned char bucpe_B_GISInterface;
+	unsigned char bucpe_B_AreaCode[30];
+	unsigned int bucpe_B_GISLockTime;
+	unsigned char bucpe_B_GISDigest[30];
+	unsigned char bucpe_regid[65];
+	unsigned char bucpe_management_platform[64];
+	unsigned char bucpe_backup_management_platform[64];
+	unsigned int bucpe_report_period;
+	unsigned char bucpe_uuid[64];
+	unsigned int bucpe_appTimeOut;
+#endif
+	unsigned int napt_maxsession_enable;
+	unsigned int napt_maxsession_num;
+#ifdef _PRMT_X_CT_COM_PERFORMANCE_REPORT_
+	unsigned char performance_report_logserverurl[256];
+	unsigned int performance_report_loguploadinterval;
+	unsigned int performance_report_logcountinterval;
+#endif
+		unsigned char port_bandwidth_enable;
+	unsigned char roaming2g_enable;
+	unsigned int roaming2g_start_time;
+	unsigned char roaming2g_rssi_th1;
+	unsigned char roaming2g_rssi_th2;
+	unsigned char roaming5g_enable;
+	unsigned int roaming5g_start_time;
+	unsigned char roaming5g_rssi_th1;
+	unsigned char roaming5g_rssi_th2;
+	unsigned char beaconTxVSIE_enable;
+	unsigned int beaconTxVSIE_maxEntryNum;
+	unsigned int beaconTxVSIE_maxConcurrentTask;
+	unsigned char probeRxVSIE_enable;
+	unsigned char vlan_4K_transparent;
+	unsigned int igmp_snoopingGrpTimeout;
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	unsigned char cmcc_osgi_api_ver[MAX_NAME_LEN];
+	unsigned char province_sw_version[MAX_NAME_LEN];
+#ifdef CONFIG_CMCC_OSGIMANAGE
+	unsigned char osgiManagePlatform[256];
+	unsigned int osgiManagePlatPort;
+	unsigned int osgicmccJarLink;
+	unsigned char osgiManageForceHBEnable;
+	unsigned int osgiManageForceHBInterval;
+	unsigned char osgiManageUseFTPClient;
+#endif
+	unsigned int osgi_debug;
+	unsigned char igmp_mld_snooping;
+	unsigned char igmp_mld_proxy;
+	unsigned char ipv6_vlan_enable;	
+	unsigned int ipv4_vlan_id;
+	unsigned int ipv6_vlan_id;
+	unsigned char web_loid_page_enable;
+#ifdef CONFIG_USER_OPENJDK8
+	unsigned char osgi_apache_web_enable;
+	char osgi_bundle_cmccdpi_path[128];
+	char osgi_bundle_appcore_path[128];
+	char osgi_bundle_andlink_path[128];
+#endif
+	unsigned char web_wlan_ssid2_enable;
+	unsigned char web_wlan_ssid2_only_enable;
+	unsigned char web_wlan_ssidprefix_enable;
+#endif //CONFIG_CMCC
+	int port_unbind_wifi_untag_vid;
+#if defined(CONFIG_IPV6) &&  defined(CONFIG_USER_DHCPV6_ISC_DHCP411)
+	unsigned char dhcpv6s_dns_assign_mode; 
+	unsigned char dhcpv6s_pool_addr_format;
+#endif
+#ifdef _PRMT_X_CT_COM_DATA_SPEED_LIMIT_
+	unsigned char data_speed_limit_up_mode;
+	unsigned char data_speed_limit_down_mode;
+#endif
+
+#ifdef CTC_TELNET_CLI_CTRL
+	unsigned char province_telnetcli_enable;
+#endif
+#ifdef CONFIG_USER_LAN_PORT_AS_ETH_WAN
+	int eth_wan_port_phy_index;
+#endif
+
+	unsigned int dmzIfWan;
+#ifdef _PRMT_C_CU_LOGALARM_
+	unsigned int alarm_enable;
+	unsigned int alarm_level;	
+#endif	
+#if defined(CONFIG_GPON_FEATURE) || defined(CONFIG_EPON_FEATURE)
+	unsigned char pon_reg_mode;
+#endif
+} __PACK__ MIB_T, *MIB_Tp;
+#ifdef DNS_BIND_PVC_SUPPORT
+#define ADDDNSROUTE 0
+#define DELDNSROUTE 1
+#endif
+#ifdef CONFIG_WIFI_SIMPLE_CONFIG // WPS WIFI_SIMPLE_CONFIG
+//enum { CONFIG_METHOD_ETH=0x2, CONFIG_METHOD_PIN=0x4, CONFIG_METHOD_PBC=0x80 };
+enum { WSC_ENCRYPT_NONE=1, WSC_ENCRYPT_WEP=2, WSC_ENCRYPT_TKIP=4, WSC_ENCRYPT_AES=8, WSC_ENCRYPT_TKIPAES=12 };
+enum { WSC_AUTH_OPEN=1, WSC_AUTH_WPAPSK=2, WSC_AUTH_SHARED=4, WSC_AUTH_WPA=8, WSC_AUTH_WPA2=0x10, WSC_AUTH_WPA2PSK=0x20, WSC_AUTH_WPA2PSKMIXED=0x22 };
+#endif
+
+typedef struct hw_config_setting {
+	// Supervisor of web server account
+	unsigned char superName[MAX_NAME_LEN]; // supervisor name
+	unsigned char superPassword[MAX_NAME_LEN]; // supervisor assword
+	//unsigned char bootMode; // 0 - last config, 1 - default config, 2 - upgrade config
+	unsigned char elanMacAddr[MAC_ADDR_LEN]; // MAC address of ELAN port in used
+	unsigned char wlanMacAddr[MAC_ADDR_LEN]; // MAC address of WLAN port in used
+	unsigned int wanPhyPort; //index of wan physical port
+//#if WLAN_SUPPORT
+	unsigned char txPowerCCK[MAX_CHAN_NUM]; // CCK Tx power for each channel
+
+	unsigned char pwrlevelCCK_A[MAX_CHAN_NUM]; //tx power ofdm 1s path A + B
+	unsigned char pwrlevelCCK_B[MAX_CHAN_NUM]; //tx power ofdm 2s path A + B
+	unsigned char pwrlevelHT40_1S_A[MAX_CHAN_NUM]; //difference between OFDM and HT40-1S path A
+	unsigned char pwrlevelHT40_1S_B[MAX_CHAN_NUM]; //difference between OFDM and HT40-1S path B
+	unsigned char pwrdiffHT40_2S[MAX_CHAN_NUM];
+	unsigned char pwrdiffHT20[MAX_CHAN_NUM];
+	unsigned char pwrdiffOFDM[MAX_CHAN_NUM];
+	unsigned char TSSI1;
+	unsigned char TSSI2;
+	unsigned char Ther;
+	unsigned char Ther2;
+	unsigned char PA_type;
+	unsigned char regDomain; // regulation domain
+	unsigned char trswpape_c9; // TRSWPAPE C9
+	unsigned char trswpape_cc;
+	unsigned char trswitch;
+// this variable for wlan1 8812AR
+	unsigned char pwrlevelCCK_A_w1[MAX_CHAN_NUM]; //tx power ofdm 1s path A + B
+	unsigned char pwrlevelCCK_B_w1[MAX_CHAN_NUM]; //tx power ofdm 2s path A + B
+	unsigned char pwrlevelHT40_1S_A_w1[MAX_CHAN_NUM]; //difference between OFDM and HT40-1S path A
+	unsigned char pwrlevelHT40_1S_B_w1[MAX_CHAN_NUM]; //difference between OFDM and HT40-1S path B
+	unsigned char pwrdiffHT40_2S_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiffHT20_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiffOFDM_w1[MAX_CHAN_NUM];
+	unsigned char TSSI1_w1;
+	unsigned char TSSI2_w1;
+	unsigned char Ther_w1;
+	unsigned char Ther2_w1;
+	unsigned char PA_type_w1;
+	unsigned char regDomain_w1; // regulation domain
+	unsigned char trswpape_c9_w1; // TRSWPAPE C9
+	unsigned char trswpape_cc_w1;
+	unsigned char trswitch_w1;
+	//unsigned char slave_elanMacAddr[MAC_ADDR_LEN]; // MAC address of Slave CPU ELAN port in used
+
+	unsigned char rfType; // RF module type
+	unsigned char antDiversity; // rx antenna diversity on/off
+	unsigned char txAnt; // select tx antenna, 0 - A, 1 - B
+	unsigned char csThreshold;
+	unsigned char ccaMode;	// 0, 1, 2
+	unsigned char phyType; // for Philip RF module only (0 - analog, 1 - digital)
+	unsigned char ledType; // LED type, see LED_TYPE_T for definition
+	unsigned char pwrlevel5GHT40_1S_A[MAX_5G_CHANNEL_NUM];
+	unsigned char pwrlevel5GHT40_1S_B[MAX_5G_CHANNEL_NUM];
+	unsigned char pwrlevel5GHT40_1S_A_w1[MAX_5G_CHANNEL_NUM];
+	unsigned char pwrlevel5GHT40_1S_B_w1[MAX_5G_CHANNEL_NUM];
+#ifdef CONFIG_RTL_92D_SUPPORT
+	unsigned char pwrdiff5GHT40_2S[MAX_5G_CHANNEL_NUM];
+	unsigned char pwrdiff5GHT20[MAX_5G_CHANNEL_NUM];
+	unsigned char pwrdiff5GOFDM[MAX_5G_CHANNEL_NUM];
+#endif
+
+	unsigned char pwrdiff_20BW1S_OFDM1T_A[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW2S_20BW2S_A[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM2T_CCK2T_A[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW3S_20BW3S_A[MAX_CHAN_NUM];
+	unsigned char pwrdiff_4OFDM3T_CCK3T_A[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW4S_20BW4S_A[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM4T_CCK4T_A[MAX_CHAN_NUM];
+
+	unsigned char pwrdiff_5G_20BW1S_OFDM1T_A[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW2S_20BW2S_A[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW3S_20BW3S_A[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW4S_20BW4S_A[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_RSVD_OFDM4T_A[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW1S_160BW1S_A[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW2S_160BW2S_A[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW3S_160BW3S_A[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW4S_160BW4S_A[MAX_5G_DIFF_NUM];
+
+	unsigned char pwrdiff_20BW1S_OFDM1T_B[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW2S_20BW2S_B[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM2T_CCK2T_B[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW3S_20BW3S_B[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM3T_CCK3T_B[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW4S_20BW4S_B[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM4T_CCK4T_B[MAX_CHAN_NUM];
+
+	unsigned char pwrdiff_5G_20BW1S_OFDM1T_B[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW2S_20BW2S_B[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW3S_20BW3S_B[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW4S_20BW4S_B[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_RSVD_OFDM4T_B[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW1S_160BW1S_B[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW2S_160BW2S_B[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW3S_160BW3S_B[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW4S_160BW4S_B[MAX_5G_DIFF_NUM];
+
+//#endif // of WLAN_SUPPORT
+	unsigned char	byte_test;
+	unsigned short word_test;
+	unsigned int dword_test;
+	int	int_test1;
+	int	int_test2;
+//#ifdef WLAN_SUPPORT
+	unsigned char wifi_support;
+//#endif
+	unsigned char	serialNumber[64];
+	unsigned char fon_keyword[32];
+	unsigned char rf_xCap;
+	unsigned char rf_xCap2;
+	unsigned char rf_xCap_w1;
+	unsigned char rf_xCap2_w1;
+
+#ifdef CONFIG_LUNA
+	unsigned int pon_mode;
+	unsigned int pon_speed;
+#if defined(CONFIG_GPON_FEATURE) || defined(CONFIG_EPON_FEATURE)
+	unsigned int pon_led_spec;
+	unsigned char pon_vendor_id[5];
+#if defined(CONFIG_GPON_FEATURE)
+	unsigned char gpon_sn[13];
+#endif
+#if defined(CONFIG_EPON_FEATURE)
+    unsigned char epon_onu_model[5];
+    unsigned char epon_extonu_model[17];
+    //unsigned char epon_hw_version[9];
+    //unsigned char epon_sw_version[17];
+	unsigned int  epon_silent_mode;
+#endif
+#endif
+#endif
+	unsigned char target_pwr;
+	unsigned char target_pwr_w1;
+
+	unsigned char pwrlevelCCK_C[MAX_CHAN_NUM]; //tx power ofdm 1s path C + D
+	unsigned char pwrlevelCCK_D[MAX_CHAN_NUM]; //tx power ofdm 2s path C + D
+	unsigned char pwrlevelHT40_1S_C[MAX_CHAN_NUM]; //difference between OFDM and HT40-1S path C
+	unsigned char pwrlevelHT40_1S_D[MAX_CHAN_NUM]; //difference between OFDM and HT40-1S path D
+	unsigned char pwrlevel5GHT40_1S_C[MAX_5G_CHANNEL_NUM];
+	unsigned char pwrlevel5GHT40_1S_D[MAX_5G_CHANNEL_NUM];
+	unsigned char pwrlevelCCK_C_w1[MAX_CHAN_NUM]; //tx power ofdm 1s path C + D
+	unsigned char pwrlevelCCK_D_w1[MAX_CHAN_NUM]; //tx power ofdm 2s path C + D
+	unsigned char pwrlevelHT40_1S_C_w1[MAX_CHAN_NUM]; //difference between OFDM and HT40-1S path C
+	unsigned char pwrlevelHT40_1S_D_w1[MAX_CHAN_NUM]; //difference between OFDM and HT40-1S path D
+	unsigned char pwrlevel5GHT40_1S_C_w1[MAX_5G_CHANNEL_NUM];
+	unsigned char pwrlevel5GHT40_1S_D_w1[MAX_5G_CHANNEL_NUM];
+
+//#if defined(CONFIG_WLAN_HAL_8814AE) && (defined(WLAN0_5G_SUPPORT) || defined(WLAN1_5G_SUPPORT))
+	unsigned char pwrdiff_20BW1S_OFDM1T_C[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW2S_20BW2S_C[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM2T_CCK2T_C[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW3S_20BW3S_C[MAX_CHAN_NUM];
+	unsigned char pwrdiff_4OFDM3T_CCK3T_C[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW4S_20BW4S_C[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM4T_CCK4T_C[MAX_CHAN_NUM];
+
+	unsigned char pwrdiff_5G_20BW1S_OFDM1T_C[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW2S_20BW2S_C[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW3S_20BW3S_C[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW4S_20BW4S_C[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_RSVD_OFDM4T_C[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW1S_160BW1S_C[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW2S_160BW2S_C[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW3S_160BW3S_C[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW4S_160BW4S_C[MAX_5G_DIFF_NUM];
+
+	unsigned char pwrdiff_20BW1S_OFDM1T_D[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW2S_20BW2S_D[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM2T_CCK2T_D[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW3S_20BW3S_D[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM3T_CCK3T_D[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW4S_20BW4S_D[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM4T_CCK4T_D[MAX_CHAN_NUM];
+
+	unsigned char pwrdiff_5G_20BW1S_OFDM1T_D[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW2S_20BW2S_D[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW3S_20BW3S_D[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW4S_20BW4S_D[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_RSVD_OFDM4T_D[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW1S_160BW1S_D[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW2S_160BW2S_D[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW3S_160BW3S_D[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW4S_160BW4S_D[MAX_5G_DIFF_NUM];
+//#endif
+
+#ifdef CONFIG_LAN_SDS_FEATURE
+	unsigned int lan_sds_mode;
+#endif
+#ifdef CONFIG_LAN_SDS1_FEATURE
+	unsigned int lan_sds1_mode;
+#endif
+
+//#if defined(CONFIG_WLAN_HAL_8814AE) && defined(WLAN_DUALBAND_CONCURRENT)
+	unsigned char pwrdiff_20BW1S_OFDM1T_A_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW2S_20BW2S_A_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM2T_CCK2T_A_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW3S_20BW3S_A_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_4OFDM3T_CCK3T_A_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW4S_20BW4S_A_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM4T_CCK4T_A_w1[MAX_CHAN_NUM];
+
+	unsigned char pwrdiff_5G_20BW1S_OFDM1T_A_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW2S_20BW2S_A_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW3S_20BW3S_A_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW4S_20BW4S_A_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_RSVD_OFDM4T_A_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW1S_160BW1S_A_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW2S_160BW2S_A_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW3S_160BW3S_A_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW4S_160BW4S_A_w1[MAX_5G_DIFF_NUM];
+
+	unsigned char pwrdiff_20BW1S_OFDM1T_B_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW2S_20BW2S_B_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM2T_CCK2T_B_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW3S_20BW3S_B_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM3T_CCK3T_B_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW4S_20BW4S_B_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM4T_CCK4T_B_w1[MAX_CHAN_NUM];
+
+	unsigned char pwrdiff_5G_20BW1S_OFDM1T_B_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW2S_20BW2S_B_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW3S_20BW3S_B_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW4S_20BW4S_B_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_RSVD_OFDM4T_B_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW1S_160BW1S_B_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW2S_160BW2S_B_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW3S_160BW3S_B_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW4S_160BW4S_B_w1[MAX_5G_DIFF_NUM];
+
+	unsigned char pwrdiff_20BW1S_OFDM1T_C_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW2S_20BW2S_C_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM2T_CCK2T_C_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW3S_20BW3S_C_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_4OFDM3T_CCK3T_C_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW4S_20BW4S_C_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM4T_CCK4T_C_w1[MAX_CHAN_NUM];
+
+	unsigned char pwrdiff_5G_20BW1S_OFDM1T_C_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW2S_20BW2S_C_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW3S_20BW3S_C_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW4S_20BW4S_C_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_RSVD_OFDM4T_C_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW1S_160BW1S_C_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW2S_160BW2S_C_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW3S_160BW3S_C_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW4S_160BW4S_C_w1[MAX_5G_DIFF_NUM];
+
+	unsigned char pwrdiff_20BW1S_OFDM1T_D_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW2S_20BW2S_D_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM2T_CCK2T_D_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW3S_20BW3S_D_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM3T_CCK3T_D_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_40BW4S_20BW4S_D_w1[MAX_CHAN_NUM];
+	unsigned char pwrdiff_OFDM4T_CCK4T_D_w1[MAX_CHAN_NUM];
+
+	unsigned char pwrdiff_5G_20BW1S_OFDM1T_D_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW2S_20BW2S_D_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW3S_20BW3S_D_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_40BW4S_20BW4S_D_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_RSVD_OFDM4T_D_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW1S_160BW1S_D_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW2S_160BW2S_D_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW3S_160BW3S_D_w1[MAX_5G_DIFF_NUM];
+	unsigned char pwrdiff_5G_80BW4S_160BW4S_D_w1[MAX_5G_DIFF_NUM];
+//#endif // defined(CONFIG_WLAN_HAL_8814AE) && (defined(WLAN_DUALBAND_CONCURRENT)
+
+	unsigned char default_userPassword[MAX_NAME_LEN];
+	unsigned char default_wlanssid[MAX_NAME_LEN];
+	unsigned char default_wlanwpakey[MAX_NAME_LEN];
+	unsigned char hw_province_name[8];
+	char cwmp_manufacturer[64];
+	char cwmp_productclass[64];
+	char cwmp_hw_ver[32];
+	char cwmp_hw_pcbver[32];
+	char cwmp_model_name[64];
+
+	unsigned char oui[3];
+	unsigned char pmapping[4];
+	char gpon_onu_model[64];
+	unsigned char cwmp_dev_type;
+#if defined(CONFIG_RTK_OMCI_V1)
+	unsigned char omci_wan_qos_queue_num;
+#endif
+	unsigned char wlan_countrycode;
+	char wlan_countrystr[8];
+	unsigned char wlan_countrycode_w1;
+	char wlan_countrystr_w1[8];
+	unsigned char bDPPathAOK;
+	unsigned char bDPPathBOK;
+	unsigned char pwsf_2g_a[3];
+	unsigned char pwsf_2g_b[3];
+	unsigned int lut_2g_even_a0[64];
+	unsigned int lut_2g_even_a1[64];
+	unsigned int lut_2g_even_a2[64];
+	unsigned int lut_2g_odd_a0[64];
+	unsigned int lut_2g_odd_a1[64];
+	unsigned int lut_2g_odd_a2[64];
+	unsigned int lut_2g_even_b0[64];
+	unsigned int lut_2g_even_b1[64];
+	unsigned int lut_2g_even_b2[64];
+	unsigned int lut_2g_odd_b0[64];
+	unsigned int lut_2g_odd_b1[64];
+	unsigned int lut_2g_odd_b2[64];
+	
+	unsigned char vendor_spec_info[4];
+
+	char hw_telnet_server_username[MAX_NAME_LEN];
+	char hw_telnet_server_password[MAX_NAME_LEN];
+	char hw_e8bduserName[MAX_NAME_LEN];     // user name
+	char hw_e8bduserPassword[MAX_NAME_LEN]; // user assword
+} __PACK__ HW_MIB_T, *HW_MIB_Tp;
+
+typedef struct chain_record_header {
+	unsigned short id;
+	unsigned int len;
+} __PACK__ MIB_CHAIN_RECORD_HDR_T, *MIB_CHAIN_RECORD_HDR_Tp;
+
+typedef struct chain_entry {
+	struct chain_entry	*pNext;
+	unsigned char* pValue;
+} MIB_CHAIN_ENTRY_T, *MIB_CHAIN_ENTRY_Tp;
+
+// For MIB RS (Running Setting)
+typedef struct rs_config_setting
+{
+	int cwmp_UserInfo_ServiceNum_Done;
+	unsigned char cwmp_UserInfo_ServiceName_Done[32];
+#ifdef CONFIG_USER_RTK_LBD
+	unsigned char lbd_port_status[SW_LAN_PORT_NUM];
+#endif
+	unsigned int cwmp_ping_ifIndex;
+	unsigned char cwmp_ping_host[257];
+	unsigned int cwmp_traceroute_ifIndex;
+	unsigned char cwmp_traceroute_host[257];
+#ifdef CONFIG_SUPPORT_AUTO_DIAG
+	int autoDiagStartTime;
+#endif
+	unsigned int cwmp_inform_attempt_num;
+	unsigned int cwmp_inform_ok_num;
+#ifdef CONFIG_USER_BEHAVIOR_ANALYSIS
+	unsigned int cwmp_np_dns_ifIndex;
+#endif
+	unsigned char cwmp_SENDING_STBBIND;
+	int	cwmp_last_inform_time;
+	unsigned char cwmp_STBBIND_need_update;
+#ifdef CONFIG_TR142_MODULE
+	unsigned char omci_acs_configured;
+	char omci_acs_url[256+1];
+	char omci_acs_username[256+1];
+	char omci_acs_passwd[256+1];
+	unsigned int omci_tr069_if_id;
+	char omci_tr069_ifname[16];
+#endif
+	char dhcp_acs_url[256+1];
+	char dhcp_tr069_ifname[16];
+	unsigned char cwmp_status;
+	char cwmp_used_acs_url[256+1];
+	unsigned char cwmp_used_acs_from;
+	unsigned int cwmp_session_start_time;
+	unsigned int cwmp_session_end_time;
+#ifdef _PRMT_X_CMCC_SECURITY_
+	unsigned char parentalctrl_rule_reset;
+#endif
+} RS_MIB_T, *RS_MIB_Tp;
+
+/*
+ * Flash File System
+ */
+struct flash_mtd_info_t {
+	uint32_t start;
+	uint32_t end;
+	uint32_t erasesize;
+	char name[16];
+};
+extern struct flash_mtd_info_t flash_mtd_info[];
+extern int g_cs_offset;
+extern int g_rootfs_offset;
+#if defined(CONFIG_MTD_NAND) || defined(CONFIG_DOUBLE_IMAGE)
+extern int g_fs_bak_offset;
+#endif
+#define DEFAULT_SETTING_MIN_LEN		sizeof(MIB_T)
+#define DEFAULT_SETTING_MAX_LEN		0x2000
+#define CURRENT_SETTING_MIN_LEN		sizeof(MIB_T)
+#ifndef COMPRESS_CURRENT_SETTING
+#define CURRENT_SETTING_MAX_LEN		0xc000
+#else
+#define CURRENT_SETTING_MAX_LEN		0x4000
+#define CURRENT_SETTING_MAX_REAL_LEN	0x2000
+#define CURRENT_SETTING_LEN			0x4000
+#endif
+#define HW_SETTING_MIN_LEN		sizeof(HW_MIB_T)
+#define HW_SETTING_MAX_LEN		0x2000
+
+//ccwei
+//#ifdef EMBED
+//#if defined(EMBED) && !defined(CONFIG_MTD_NAND) && !defined(CONFIG_BLK_DEV_INITRD)
+/*if both defined CONFIG_MTD and CONFIG_BLK_DEV_INITRD, get config from mtd*/
+#if defined(EMBED) && !defined(CONFIG_MTD_NAND) && defined(CONFIG_MTD)
+//end ccwei
+#define FLASH_DEVICE_NAME		("/dev/mtd")
+#if defined(CONFIG_SINGLE_IMAGE)
+/*--------------------------------------------------------------------------
+			Single Image
+---------------------------------------------------------------------------*/
+#ifdef CONFIG_RTL8686
+#define FLASH_BLOCK_SIZE        0x10000     // 64KB block
+#define CODE_IMAGE_OFFSET       0x500000
+#define DEFAULT_SETTING_OFFSET  0x100000
+//#define HW_SETTING_OFFSET       DEFAULT_SETTING_OFFSET + DEFAULT_SETTING_MAX_LEN
+#define HW_SETTING_OFFSET       0x28000
+#define CURRENT_SETTING_OFFSET  HW_SETTING_OFFSET + HW_SETTING_MAX_LEN
+#else//config_rtl8686
+#define FLASH_BLOCK_SIZE		0x10000		// 64KB block
+#define CODE_IMAGE_OFFSET		CONFIG_BOOT_SIZE+0x20000
+#define DEFAULT_SETTING_OFFSET		0x4000
+#define HW_SETTING_OFFSET		DEFAULT_SETTING_OFFSET + DEFAULT_SETTING_MAX_LEN
+#define CURRENT_SETTING_OFFSET		CONFIG_BOOT_SIZE
+#endif//config_rtl8686
+#define WEB_PAGE_OFFSET			0x1E0000
+
+#else
+/*--------------------------------------------------------------------------
+			Double Image
+---------------------------------------------------------------------------*/
+#define FLASH_BLOCK_SIZE		0x10000		// 64KB block
+#define CODE_IMAGE_OFFSET		0x100000
+#define ROOTFS_BAKUP_OFFSET		0x600000
+#define DEFAULT_SETTING_OFFSET		0x30000
+#define HW_SETTING_OFFSET		0x20000
+#define CURRENT_SETTING_OFFSET		0x40000
+#define WEB_PAGE_OFFSET			0x1E0000
+#define PART_CHECK_OFFSET		0xA0000
+#endif
+
+
+
+
+
+#else //EMBED
+//ccwei
+#ifdef CONFIG_USER_CONF_ON_RAWFILE
+#ifdef CONFIG_BLK_DEV_INITRD
+#define FLASH_DEVICE_NAME		("/var/setting.bin")
+#else /*CONFIG_BLK_DEV_INITRD*/
+#ifdef CONFIG_DEFAULTS_REALTEK_LUNA
+#define FLASH_DEVICE_NAME		("/var/config/setting.bin")
+#else
+#define FLASH_DEVICE_NAME		("/var/media/setting.bin")
+#endif /*CONFIG_DEFAULTS_REALTEK_LUNA*/
+#endif /*CONFIG_BLK_DEV_INITRD*/
+#elif CONFIG_USER_CONF_ON_XMLFILE
+extern const char CONF_ON_XMLFILE[];
+extern const char CONF_ON_XMLFILE_HS[];
+#endif
+
+#ifdef CONFIG_DOUBLE_IMAGE
+#define PART_CHECK_BLOCK_OFFSET		0x1C0000
+#define PART_CHECK_PAGE_OFFSET		0x3c
+#define PART_CHECK_OFFSET		(PART_CHECK_BLOCK_OFFSET + PART_CHECK_PAGE_OFFSET)
+#endif /* CONFIG_DOUBLE_IMAGE */
+
+//#define HW_SETTING_OFFSET		0
+//#define DEFAULT_SETTING_OFFSET		HW_SETTING_OFFSET + HW_SETTING_MAX_LEN
+//#define CURRENT_SETTING_OFFSET		DEFAULT_SETTING_OFFSET + DEFAULT_SETTING_MAX_LEN
+
+#define DEFAULT_SETTING_OFFSET		0
+#define HW_SETTING_OFFSET		DEFAULT_SETTING_OFFSET + DEFAULT_SETTING_MAX_LEN
+#define CURRENT_SETTING_OFFSET		HW_SETTING_OFFSET + HW_SETTING_MAX_LEN
+
+#define WEB_PAGE_OFFSET			CURRENT_SETTING_OFFSET + CURRENT_SETTING_MAX_LEN
+#define CODE_IMAGE_OFFSET		WEB_PAGE_OFFSET + 0x10000
+#endif //end EMBED
+
+
+/*
+ * Chain Record MIB struct
+ */
+#define MAX_OUTGOING_IPFILTER_RULE_NUM (32)
+#define MAX_INCOMING_IPFILTER_RULE_NUM (32)
+#define MAX_IPFILTER_RULE_NUM (MAX_INCOMING_IPFILTER_RULE_NUM+MAX_OUTGOING_IPFILTER_RULE_NUM)
+typedef struct ipportfilter_entry {
+	unsigned char action; // 0 - Deny, 1 - Allow
+	unsigned char srcIp[IP_ADDR_LEN];
+	unsigned char dstIp[IP_ADDR_LEN];
+	unsigned char smaskbit;
+	unsigned char dmaskbit;
+	unsigned short srcPortFrom;
+	unsigned short dstPortFrom;
+	unsigned short srcPortTo;
+	unsigned short dstPortTo;
+	unsigned char dir;
+	unsigned char protoType;
+	unsigned char name[32+1];
+	unsigned char srcIp2[IP_ADDR_LEN];//the src ip range end.
+	unsigned char dstIp2[IP_ADDR_LEN];//the dest ip range end.
+#ifdef CONFIG_IPV6
+	unsigned char IpProtocol;          // 1: IPv4, 2:IPv6
+	unsigned char sip6Start[IP6_ADDR_LEN];
+	unsigned char sip6End[IP6_ADDR_LEN];
+	unsigned char dip6Start[IP6_ADDR_LEN];
+	unsigned char dip6End[IP6_ADDR_LEN];
+	unsigned char sip6PrefixLen;
+	unsigned char dip6PrefixLen;
+#endif
+	unsigned char enable;
+	unsigned int instNum;	//IpProtocol + dir + instNum as a key for CMCC
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	unsigned char WanPath[16];
+#endif
+} __PACK__ MIB_CE_IP_PORT_FILTER_T, *MIB_CE_IP_PORT_FILTER_Tp;
+
+#ifdef CONFIG_IPV6
+typedef struct v6ipportfilter_entry {
+	unsigned char action; // 0 - Deny, 1 - Allow
+#ifdef CONFIG_IPV6_OLD_FILTER
+	unsigned char 	sip6Start[IP6_ADDR_LEN];
+	unsigned char 	sip6End[IP6_ADDR_LEN];
+	unsigned char 	dip6Start[IP6_ADDR_LEN];
+	unsigned char 	dip6End[IP6_ADDR_LEN];
+	unsigned char 	sip6PrefixLen;
+	unsigned char 	dip6PrefixLen;
+#else
+	unsigned char 	sIfId6Start[IP6_ADDR_LEN];
+	unsigned char 	sIfId6End[IP6_ADDR_LEN];
+	unsigned char 	dIfId6Start[IP6_ADDR_LEN];
+	unsigned char 	dIfId6End[IP6_ADDR_LEN];
+#endif
+	unsigned short srcPortFrom;
+	unsigned short dstPortFrom;
+	unsigned short srcPortTo;
+	unsigned short dstPortTo;
+	unsigned char dir;
+	unsigned char protoType;
+} __PACK__ MIB_CE_V6_IP_PORT_FILTER_T, *MIB_CE_V6_IP_PORT_FILTER_Tp;
+#endif
+
+ /*ping_zhang:20080919 START:add for new telefonica tr069 request: dhcp option*/
+#ifdef _PRMT_X_TELEFONICA_ES_DHCPOPTION_
+/*ping_zhang:20090319 START:replace ip range with serving pool of tr069*/
+//#define DHCP_OPT_VAL_LEN 20
+#define OPTION_RSV_LEN	100
+#define DHCP_OPT_VAL_LEN OPTION_RSV_LEN+1
+/*ping_zhang:20090319 END*/
+
+enum e_DHCPOpUsedFor
+{
+	eUsedFor_DHCPServer = 1,
+	eUsedFor_DHCPServer_ServingPool,
+	eUsedFor_DHCPClient_Sent,
+	eUsedFor_DHCPClient_Req
+};
+
+typedef struct dhcpoption_entry {
+	unsigned char enable;
+	unsigned char usedFor;
+	unsigned int order;
+/*ping_zhang:20090319 START:replace ip range with serving pool of tr069*/
+	//unsigned int tag;
+	unsigned char tag;
+/*ping_zhang:20090319 END*/
+	unsigned char len;//ql add: recored the len of value
+	unsigned char value[DHCP_OPT_VAL_LEN];
+	unsigned int ifIndex;
+	unsigned int dhcpOptInstNum;
+	unsigned int dhcpConSPInstNum;
+} __PACK__ MIB_CE_DHCP_OPTION_T, *MIB_CE_DHCP_OPTION_Tp;
+#endif
+/*ping_zhang:20080919 END*/
+
+typedef struct portfw_entry {
+	//unsigned char action; // 0 - Deny, 1 - Allow
+	unsigned char ipAddr[IP_ADDR_LEN]; /*TR-069:internalclient*/
+	unsigned short fromPort; /*TR-069:internalport*/
+	unsigned short toPort; /*TR-069:internalport*/
+	unsigned char protoType;/*TR-069:protocol*/
+	unsigned char comment[COMMENT_LEN];
+//#ifdef _CWMP_MIB_ /*jiunming, for cwmp-tr069*/
+	unsigned int ifIndex;/*0xff: no specific, interface name, refer to "struct atmvc_entry"*/
+	unsigned char enable;
+	unsigned int  leaseduration;/*0:static*/
+	unsigned char remotehost[IP_ADDR_LEN];
+//	unsigned int  externalport;
+	unsigned int  externalfromport;
+	unsigned int  externaltoport;
+	//unsigned int  internalport;
+	//unsigned char protocol;/*0:tcp, 1:udp*/
+	//unsigned char internalclient[IP_ADDR_LEN];
+	unsigned char dynamic;
+	unsigned int  InstanceNum;
+//#endif
+} __PACK__ MIB_CE_PORT_FW_T, *MIB_CE_PORT_FW_Tp;
+
+#ifdef PORT_FORWARD_ADVANCE
+typedef struct ipfw_advance_entry {
+	unsigned char ipAddr[IP_ADDR_LEN];
+	unsigned int ifIndex;/*0xff: no specific, interface name, refer to "struct atmvc_entry"*/
+	unsigned char gategory;
+	unsigned int rule;
+} __PACK__ MIB_CE_PORT_FW_ADVANCE_T, *MIB_CE_PORT_FW_ADVANCE_Tp;
+#endif
+
+#ifdef VIRTUAL_SERVER_SUPPORT
+typedef struct vtlsvr_entry {
+	unsigned char svrIpAddr[IP_ADDR_LEN];	//server ip
+	unsigned char svrName[16];	//server name
+	unsigned short wanStartPort;		//wan comm start port
+	unsigned short wanEndPort;	//wan comm end port
+	unsigned short svrStartPort;		//local server start port
+	unsigned short svrEndPort;	//local server end port
+	unsigned char protoType;	//protocol(TCP/UDP)
+} __PACK__ MIB_CE_VTL_SVR_T, *MIB_CE_VTL_SVR_Tp;
+#endif
+#ifdef NATIP_FORWARDING
+typedef struct ipfw_entry {
+	unsigned char action; // 0 - Deny, 1 - Allow
+	unsigned char local_ip[IP_ADDR_LEN];
+	unsigned char remote_ip[IP_ADDR_LEN];
+} __PACK__ MIB_CE_IP_FW_T, *MIB_CE_IP_FW_Tp;
+#endif
+
+#ifdef PORT_TRIGGERING
+#define GAMING_MAX_RANGE 32
+typedef struct porttrg_entry {
+	unsigned char	name[32];		// name
+	unsigned char	ip[IP_ADDR_LEN];
+	unsigned char	tcpRange[GAMING_MAX_RANGE];
+	unsigned char	udpRange[GAMING_MAX_RANGE];
+	unsigned char	enable;			// enable
+} __PACK__ MIB_CE_PORT_TRG_T, *MIB_CE_PORT_TRG_Tp;
+#endif
+
+typedef struct macfilter_entry {
+	unsigned char action; // 0 - Deny, 1 - Allow
+	//unsigned char macAddr[MAC_ADDR_LEN];
+	unsigned char srcMac[MAC_ADDR_LEN];
+	unsigned char dstMac[MAC_ADDR_LEN];
+	unsigned char comment[COMMENT_LEN];
+	// Added by Mason Yu for Incoming MAC filtering
+	unsigned char dir;
+} __PACK__ MIB_CE_MAC_FILTER_T, *MIB_CE_MAC_FILTER_Tp;
+
+
+#ifdef CONFIG_USER_WT_146
+#define BFD_MAX_KEY_LEN	20
+/*bfd operation mode*/
+#define BFD_ASYNC_MODE	0
+#define BFD_DEMAND_MODE	1
+/*bfd role*/
+#define BFD_ACTIVE_ROLE		0
+#define BFD_PASSIVE_ROLE	1
+/*bfd auth type*/
+#define BFD_AUTH_NONE		0
+#define BFD_AUTH_PASSWORD	1
+#define BFD_AUTH_MD5		2
+#define BFD_AUTH_METI_MD5	3
+#define BFD_AUTH_SHA1		4
+#define BFD_AUTH_METI_SHA1	5
+/*bfd auth key len*/
+#define BFD_AUTH_PASS_MINKEYLEN	1
+#define BFD_AUTH_PASS_MAXKEYLEN	16
+#define BFD_AUTH_MD5_KEYLEN	16
+#define BFD_AUTH_SHA1_KEYLEN	20
+#endif //CONFIG_USER_WT_146
+
+typedef struct atmvc_entry {
+	unsigned int ifIndex;	// resv | media | ppp | vc
+	unsigned char vpi;
+	unsigned char qos;
+	unsigned short vci;
+	unsigned short pcr;
+	unsigned short scr;
+	unsigned short mbs;
+	unsigned int cdvt;
+	unsigned char encap;
+	unsigned char napt;
+	unsigned char cmode;
+	unsigned char brmode;	// 0: transparent bridging, 1: PPPoE bridging
+	unsigned char pppUsername[MAX_PPP_NAME_LEN+1];
+	unsigned char pppPassword[MAX_NAME_LEN];
+	unsigned char pppAuth;	// 0:AUTO, 1:PAP, 2:CHAP
+	unsigned char pppACName[MAX_NAME_LEN];
+	unsigned char pppServiceName[MAX_NAME_LEN];	// Jenny, TR-069 PPPoEServiceName
+	unsigned char pppCtype;
+	unsigned short pppIdleTime;
+	unsigned short pppLcpEcho;
+	unsigned short pppLcpEchoRetry;
+#ifdef CONFIG_USER_IP_QOS
+	unsigned char enableIpQos;
+#endif
+#ifdef CONFIG_IGMPPROXY_MULTIWAN
+	unsigned char enableIGMP;
+#endif
+	unsigned char ipDhcp;
+	unsigned char rip;
+	unsigned char ipAddr[IP_ADDR_LEN];
+	unsigned char remoteIpAddr[IP_ADDR_LEN];
+	unsigned char dgw;
+	unsigned int mtu;
+	unsigned char enable;
+	unsigned char netMask[IP_ADDR_LEN];	// Jenny; Subnet mask
+	unsigned char ipunnumbered;	// Jenny, unnumbered(1)
+	unsigned char dnsMode;  // 1: enable, 0: disable
+	unsigned char v4dns1[IP_ADDR_LEN];
+	unsigned char v4dns2[IP_ADDR_LEN];
+// Mason Yu. combine_1p_4p_PortMapping, enable_802_1p_090722
+#if defined(ITF_GROUP) || defined(NEW_PORTMAPPING)
+	// used for VLAN mapping
+	unsigned char vlan;
+	unsigned short vid;
+	unsigned short vprio;	// 802.1p priority bits
+	unsigned char vpass;	// vlan passthrough
+	// used for interface group
+	unsigned short itfGroup;
+#endif
+#ifdef CONFIG_MCAST_VLAN
+	unsigned short mVid; /*use for multicast vlan, IPTV*/
+#endif
+	unsigned long cpePppIfIndex;   // Mason Yu. Remote Management
+	unsigned long cpeIpIndex;      // Mason Yu. Remote Management
+
+#ifdef _CWMP_MIB_ /*jiunming, for cwmp-tr069*/
+	unsigned char connDisable; //0:enable, 1:disable
+	unsigned int ConDevInstNum;
+	unsigned int ConIPInstNum;
+	unsigned int ConPPPInstNum;
+	unsigned short autoDisTime;	// Jenny, TR-069 PPP AutoDisconnectTime
+	unsigned short warnDisDelay;	// Jenny, TR-069 PPP WarnDisconnectDelay
+//	unsigned char pppServiceName[MAX_NAME_LEN];	// Jenny, TR-069 PPPoEServiceName
+
+#ifdef _PRMT_TR143_
+	unsigned char TR143UDPEchoItf;
+#endif //_PRMT_TR143_
+#ifdef _PRMT_X_CT_COM_WANEXT_
+	unsigned short ServiceList;
+	unsigned char IPForwardList[512];
+#endif //_PRMT_X_CT_COM_WANEXT_
+#ifdef _PRMT_X_CU_EXTEND_
+	unsigned char IPForwardModeEnabled;
+#endif
+#endif //_CWMP_MIB_
+unsigned char WanName[MAX_NAME_LEN];	//Name of this wan connection
+#ifdef CONFIG_USER_PPPOE_PROXY
+	unsigned char PPPoEProxyEnable;
+	unsigned int  PPPoEProxyMaxUser;
+#endif //CONFIG_USER_PPPOE_PROXY
+	unsigned int applicationtype;  //TR069(1), INTERNET(2), IPTV(4), VOICE(8), SPECIAL_SERVICE_1(16), SPECIAL_SERVICE_2(32), SPECIAL_SERVICE_3(64), SPECIAL_SERVICE_4(128)
+#ifdef CONFIG_SUPPORT_IPTV_APPLICATIONTYPE
+	unsigned int othertype;	 /*other type: 0-OTHER	 1-IPTV*/
+#endif
+	//char applicationname[MAX_NAME_LEN];
+	unsigned char disableLanDhcp;  /* disable dhcp on lan interface binding with this wan interface */
+	unsigned char svtype;		// Mason Yu. t123
+#ifdef CONFIG_SPPPD_STATICIP
+	unsigned char pppIp;	// Jenny, static PPPoE
+#endif
+#ifdef CONFIG_USER_WT_146
+	unsigned char	bfd_enable;
+	unsigned char	bfd_opmode;
+	unsigned char	bfd_role;
+	unsigned int	bfd_mintxint;
+	unsigned int	bfd_minrxint;
+	unsigned int	bfd_minechorxint;
+	unsigned char	bfd_detectmult;
+	unsigned char	bfd_authtype;
+	unsigned char	bfd_authkeyid;
+	unsigned char	bfd_authkeylen;
+	unsigned char	bfd_authkey[BFD_MAX_KEY_LEN];
+	unsigned char	bfd_dscp;
+	unsigned char	bfd_ethprio;
+#endif //CONFIG_USER_WT_146
+
+#ifdef BR_ROUTE_ONEPVC
+	unsigned char br_route_flag;  //star: add for set bridge and route connection on one pvc
+#endif
+#ifdef CONFIG_IPV6
+	unsigned char	IpProtocol; 		 // 1: IPv4, 2:IPv6, 3: IPv4 and IPv6
+	unsigned char	AddrMode;            // Bitmap, bit0: Slaac, bit1: Static, bit2: DS-Lite , bit3: 6rd, bit4: DHCP Client
+	unsigned char Ipv6Addr[IP6_ADDR_LEN];
+	unsigned char RemoteIpv6Addr[IP6_ADDR_LEN];
+	unsigned char IPv6PrefixOrigin;	// 0:PrefixDelegation, 1:Static, 2: PPPoE, 3:None
+	unsigned char Ipv6Prefix[IP6_ADDR_LEN];	//only for static
+	unsigned char Ipv6AddrPrefixLen;
+	unsigned int IPv6PrefixPltime;			//only for static
+	unsigned int IPv6PrefixVltime;			//only for static
+	char IPv6DomainName[65];
+	unsigned char Ipv6Dhcp;            // 0: disable, 1: enable
+	unsigned char	Ipv6DhcpRequest;     // Bitmap, bit0: Request Address, bit1: Request Prefix
+	unsigned char RemoteIpv6EndPointAddr[IP6_ADDR_LEN];
+	char Ipv6AddrAlias[41];
+	char Ipv6PrefixAlias[41];
+	unsigned char Ipv6Dns1[IP6_ADDR_LEN];
+	unsigned char Ipv6Dns2[IP6_ADDR_LEN];
+#endif
+    //6rd
+#if defined(CONFIG_IPV6) && defined(CONFIG_IPV6_SIT_6RD)
+	unsigned char SixrdBRv4IP[IP_ADDR_LEN];
+	unsigned char SixrdIPv4MaskLen;
+	unsigned char SixrdPrefix[IP6_ADDR_LEN];
+	unsigned char SixrdPrefixLen;
+#endif
+	unsigned char MacAddr[MAC_ADDR_LEN];
+	int rg_wan_idx;
+	int check_br_pm; //check bridge portmapping
+#if defined(CONFIG_GPON_FEATURE)
+	unsigned char sid;
+#endif
+#ifdef _PRMT_X_CT_COM_DHCP_
+	unsigned char dhcpv6_opt16_enable[4];
+	unsigned char dhcpv6_opt16_type[4];
+	unsigned char dhcpv6_opt16_value_mode[4];	//1: ITMS+ assign, 2: Auto-gen, 3: auto-gen encrypted voip info
+	unsigned char dhcpv6_opt16_value[4][100];
+	unsigned char dhcpv6_opt17_enable[4];
+	unsigned char dhcpv6_opt17_type[4];		//1: match sub_code & sub_data, 2:match value
+	unsigned char dhcpv6_opt17_sub_code[4];
+	unsigned char dhcpv6_opt17_sub_data[4][36];	//max length is 32
+	unsigned char dhcpv6_opt17_value[4][36];
+	unsigned char dhcp_opt60_enable[4];
+	unsigned char dhcp_opt60_type[4];
+	unsigned char dhcp_opt60_value_mode[4];	//0: ITMS+ assign, 1: Auto-gen, 2: auto-gen encrypted voip info
+	unsigned char dhcp_opt60_value[4][100];
+	unsigned char dhcp_opt125_enable[4];
+	unsigned char dhcp_opt125_type[4];		//1: match sub_code & sub_data, 2:match value
+	unsigned char dhcp_opt125_sub_code[4];
+	unsigned char dhcp_opt125_sub_data[4][36];	//max length is 32
+	unsigned char dhcp_opt125_value[4][36];
+#endif
+#if defined(CONFIG_IPV6) && defined(DUAL_STACK_LITE)
+	unsigned char dslite_enable;
+	unsigned char dslite_aftr_mode;	//0: auto, 1:manual
+	unsigned char dslite_aftr_addr[IP6_ADDR_LEN];
+	unsigned char dslite_aftr_hostname[64];
+#endif
+#if defined(CONFIG_IPV6)
+	unsigned char dnsv6Mode;  // 1: enable, 0: disable
+#endif
+#ifdef CONFIG_TR142_MODULE
+	unsigned char omci_configured;
+	unsigned int omci_if_id;
+#endif
+} __PACK__ MIB_CE_ATM_VC_T, *MIB_CE_ATM_VC_Tp;
+
+/*ping_zhang:20081217 START:patch from telefonica branch to support WT-107*/
+#ifdef _PRMT_WT107_
+#define RTF_EMPTY 0x0001 /*empty route new added by tr069*/
+#endif
+/*ping_zhang:20081217 END*/
+
+#ifdef CONFIG_USER_PPTP_CLIENT_PPTP
+typedef struct pptp_route_entry {
+	unsigned char Enable;
+	unsigned char tunnelName[MAX_NAME_LEN];
+	char url[MAX_URL_LENGTH];//URL
+	unsigned int ipv4_src_start;
+	unsigned int ipv4_src_end;
+	unsigned char sMAC[MAC_ADDR_LEN];
+	unsigned int ifIndex; // 0xff: no specific interface
+	unsigned char priority;
+	int rg_wan_idx;
+	unsigned char attach_mode;
+}__PACK__ MIB_CE_PPTP_ROUTE_T, *MIB_CE_PPTP_ROUTE_Tp;
+#endif
+
+#ifdef CONFIG_USER_L2TPD_L2TPD
+typedef struct l2tp_route_entry {
+	unsigned char Enable;
+	unsigned char tunnelName[MAX_NAME_LEN];
+	char url[MAX_URL_LENGTH];//URL
+	unsigned int ipv4_src_start;
+	unsigned int ipv4_src_end;
+	unsigned char sMAC[MAC_ADDR_LEN];
+	unsigned int ifIndex; // 0xff: no specific interface
+	unsigned char priority;
+	int rg_wan_idx;
+	unsigned char attach_mode;
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	char org_ips[MAX_URL_LENGTH];//URL
+#endif
+}__PACK__ MIB_CE_L2TP_ROUTE_T, *MIB_CE_L2TP_ROUTE_Tp;
+#endif
+
+typedef struct iproute_entry {
+	unsigned char destID[IP_ADDR_LEN]; // TR-069: DestIP
+	unsigned char netMask[IP_ADDR_LEN]; // TR-069: DestMask
+	unsigned char nextHop[IP_ADDR_LEN]; // TR-069: GatewayIP
+//#ifdef _CWMP_MIB_ /*jiunming, mib for cwmp-tr069*/
+	unsigned char Enable;
+	unsigned char Type; /*0:network, 1:host, 2:default*/
+	unsigned char SourceIP[IP_ADDR_LEN];
+	unsigned char SourceMask[IP_ADDR_LEN];
+	unsigned int ifIndex; // 0xff: no specific interface
+	int	      FWMetric;
+	unsigned int  InstanceNum;
+/*ping_zhang:20081217 START:patch from telefonica branch to support WT-107*/
+#ifdef _PRMT_WT107_
+	unsigned char Flags;
+#endif
+#ifdef CONFIG_RTK_L34_ENABLE
+	int rg_staticRoute_idx;
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	int rg_acl_idx;
+	unsigned char intfEnable;
+	unsigned char nextHopEnable;
+#endif
+#endif
+/*ping_zhang:20081217 END*/
+//#endif
+} __PACK__ MIB_CE_IP_ROUTE_T, *MIB_CE_IP_ROUTE_Tp;
+
+
+#ifdef CONFIG_IPV6
+typedef struct ipv6route_entry {
+	char Name[64];
+	unsigned char Dstination[MAX_V6_IP_LEN+8];	//with prefix
+	unsigned char NextHop[MAX_V6_IP_LEN];
+	unsigned char Enable;
+	unsigned int  DstIfIndex; // 0xff: no specific interface
+	int	      FWMetric;
+	unsigned int  InstanceNum;
+#ifdef CONFIG_RTK_L34_ENABLE
+	int rg_staticRoute_idx;
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	unsigned char intfEnable;
+	unsigned char nextHopEnable;
+#endif
+#endif
+} __PACK__ MIB_CE_IPV6_ROUTE_T, *MIB_CE_IPV6_ROUTE_Tp;
+#endif
+
+#ifdef CONFIG_EPON_FEATURE
+typedef struct epon_llid_entry {
+	unsigned char macAddr[MAC_ADDR_LEN];
+} __PACK__ MIB_CE_MIB_EPON_LLID_T, *MIB_CE_MIB_EPON_LLID_Tp;
+#endif
+
+typedef struct aclip_entry {
+#ifdef ACL_IP_RANGE
+	unsigned char startipAddr[IP_ADDR_LEN];
+	unsigned char endipAddr[IP_ADDR_LEN];
+#endif
+	unsigned char ipAddr[IP_ADDR_LEN];
+	unsigned char maskbit;
+	unsigned char Enabled;
+	unsigned char Interface;
+} __PACK__ MIB_CE_ACL_IP_T, *MIB_CE_ACL_IP_Tp;
+
+//ql_xu add:
+#ifdef MAC_ACL
+typedef struct aclmac_entry {
+	unsigned char macAddr[MAC_ADDR_LEN];
+	unsigned char Enabled;
+	unsigned char Interface;
+} __PACK__ MIB_CE_ACL_MAC_T, *MIB_CE_ACL_MAC_Tp;
+#endif
+#ifdef NAT_CONN_LIMIT
+typedef struct connlimit_entry {
+	unsigned char ipAddr[IP_ADDR_LEN];
+	unsigned char Enabled;
+	unsigned int connNum;
+} __PACK__ MIB_CE_CONN_LIMIT_T, *MIB_CE_CONN_LIMIT_Tp;
+#endif
+#ifdef TCP_UDP_CONN_LIMIT
+typedef struct tcp_udp_connlimit_entry {
+	unsigned char ipAddr[IP_ADDR_LEN];
+	unsigned char Enabled;
+	unsigned char protocol;	//0: TCP, 1:UDP
+	unsigned int connNum;
+} __PACK__ MIB_CE_TCP_UDP_CONN_LIMIT_T, *MIB_CE_TCP_UDP_CONN_LIMIT_Tp;
+#endif // TCP_UDP_CONN_LIMIT
+
+typedef struct multi_addr_mapping_entry {
+	unsigned char addressMapType; //
+	unsigned char lsip[IP_ADDR_LEN];
+	unsigned char leip[IP_ADDR_LEN];
+	unsigned char gsip[IP_ADDR_LEN];
+	unsigned char geip[IP_ADDR_LEN];
+} __PACK__ MIB_CE_MULTI_ADDR_MAPPING_LIMIT_T, *MIB_CE_MULTI_ADDR_MAPPING_LIMIT_Tp;
+
+#ifdef URL_BLOCKING_SUPPORT
+#ifdef SUPPORT_URL_FILTER
+typedef struct urlfilter_entry {
+	unsigned char Enable;
+	char url[256];                       //URL
+	char mac[512];
+	char name[64];
+//	unsigned int instNum;	
+} __PACK__ MIB_CE_URL_FILTER_T, *MIB_CE_URL_FILTER_Tp;
+#endif
+typedef struct urlfqdn_entry {
+	unsigned char fqdn[MAX_URL_LENGTH];
+	char url[MAX_URL_LENGTH];                       //URL
+	char key[MAX_URL_LENGTH];               //ql_xu add: for url filter
+	unsigned short port;            // port
+} __PACK__ MIB_CE_URL_FQDN_T, *MIB_CE_URL_FQDN_Tp;
+#endif
+
+#ifdef URL_ALLOWING_SUPPORT
+typedef struct urlalwfqdn_entry {
+	unsigned char fqdn[MAX_URL_LENGTH];
+} __PACK__ MIB_CE_URL_ALLOW_FQDN_T, *MIB_CE_URL_ALLOW_FQDN_Tp;
+#endif
+
+#ifdef URL_BLOCKING_SUPPORT
+typedef struct keywdfilter_entry {
+	unsigned char keyword[MAX_KEYWD_LENGTH];
+} __PACK__ MIB_CE_KEYWD_FILTER_T, *MIB_CE_KEYWD_FILTER_Tp;
+#endif
+
+#ifdef DOMAIN_BLOCKING_SUPPORT
+#ifdef SUPPORT_DNS_FILTER
+typedef struct dnsfilter_entry {
+	unsigned char Enable;
+	char name[64];	
+	char hostname[256];   
+	unsigned short action;
+	char mac[20];
+//	unsigned int instNum;	
+} __PACK__ MIB_CE_DNS_FILTER_T, *MIB_CE_DNS_FILTER_Tp;
+#endif
+typedef struct domainblk_entry {
+	unsigned char domain[MAX_DOMAIN_LENGTH];
+} __PACK__ MIB_CE_DOMAIN_BLOCKING_T, *MIB_CE_DOMAIN_BLOCKING_Tp;
+#endif
+
+typedef struct rip_entry {
+	unsigned int ifIndex;
+	unsigned char receiveMode;
+	unsigned char sendMode;
+} __PACK__ MIB_CE_RIP_T, *MIB_CE_RIP_Tp;
+
+#ifdef CONFIG_USER_ZEBRA_OSPFD_OSPFD
+typedef struct ospf_entry {
+	unsigned char ipAddr[IP_ADDR_LEN];
+	unsigned char netMask[IP_ADDR_LEN];
+} __PACK__ MIB_CE_OSPF_T, *MIB_CE_OSPF_Tp;
+#endif
+
+// Mason Yu. 201009_new_security
+#ifdef WLAN_SUPPORT
+typedef struct mbssid_entry {
+	unsigned char idx;              // 0:root AP, 1: vap0, 2:vap1, 3:vap2, 4: vap3, 5: repeater
+	unsigned char encrypt; // encrypt type, defined as ENCRYPT_t
+	unsigned char enable1X; // enable/disable 802.1x
+	unsigned char wep; // WEP flag, 0 - disabled, 1 - 64bits, 2 128 bits
+	unsigned char wpaAuth; // WPA authentication type (auto or psk)
+	unsigned char wpaPSKFormat; // PSK format 0 - passphrase, 1 - hex
+	unsigned char wpaPSK[MAX_PSK_LEN+1]; // WPA pre-shared key
+	unsigned long wpaGroupRekeyTime;
+	unsigned short rsPort; // radius server port number
+	unsigned char rsIpAddr[IP_ADDR_LEN]; // radius server IP address
+	unsigned char rsPassword[MAX_PSK_LEN+1]; // radius server password
+	unsigned char wlanDisabled; // enabled/disabled wlan(include VAP0~3) interface. 0:enable, 1:disable
+	unsigned char ssid[MAX_SSID_LEN]; // SSID
+	unsigned char wlanMode; // wireless mode - AP, Ethernet bridge
+	unsigned char authType; // authentication type, 0 - open-system, 1 - shared-key, 2 - both
+#ifdef _CWMP_MIB_ /*jiunming, mib for cwmp-tr069*/
+	/*for root ap, ssid and authType is not used => use MIB_WLAN_SSID and MIB_WLAN_AUTH_TYPE*/
+	unsigned char cwmp_WLAN_BasicEncry; /*0:none, 1:Wep*/
+#endif
+	//added by xl_yue:for supporting WPA(AES) and WPA(TKIP)
+	// Mason Yu. 201009_new_security
+	unsigned char unicastCipher;	// 1: TKIP, 2: AES, 3: both
+	unsigned char wpa2UnicastCipher;	// 1: TKIP, 2: AES, 3: both
+	unsigned char bcnAdvtisement; //0: ap does not send out beacons, 1: ap sends out beacons
+	unsigned char hidessid; //0: beacon include the SSID name, 1: beacon does not include the SSID name
+	unsigned char userisolation; //user isolation
+	unsigned char ssidisolation; //ssid isolation
+#ifdef CONFIG_RTL_WAPI_SUPPORT
+	unsigned char wapiPsk[MAX_PSK_LEN+1]; //password
+	unsigned char wapiPskLen; //password
+	unsigned char wapiAuth;//0:AS 1:pre-shared key
+	unsigned char wapiPskFormat; // WAPI unicast cipher suite
+	unsigned char wapiAsIpAddr[4]; // as server IP address
+	//unsigned char wapiMcastkey; //0:time 1 packets
+	//unsigned long wapiMcastRekeyTime; // 300 -31536000
+	//unsigned long wapiMcastRekeyPackets; //1048576
+	//unsigned char wapiUcastkey; //0:time 1 packets
+	//unsigned long wapiUcastRekeyTime; // 300 -31536000
+	//unsigned long wapiUcastRekeyPackets; //1048576//internal use
+	//unsigned char wapiSearchCertInfo[32]; //search info
+	//unsigned char wapiSearchIndex; // search type index
+	//unsigned char wapiCAInit; //init CA
+#endif
+
+	// Mason Yu. 201009_new_security
+	unsigned char wepKeyType;                     // 1:Hex, 0:ASCII(Key Format)
+	unsigned char wepDefaultKey;
+	unsigned char wep64Key1[WEP64_KEY_LEN];     // 3131313131: key is 11111
+	unsigned char wep64Key2[WEP64_KEY_LEN];
+	unsigned char wep64Key3[WEP64_KEY_LEN];
+	unsigned char wep64Key4[WEP64_KEY_LEN];
+	unsigned char wep128Key1[WEP128_KEY_LEN];
+	unsigned char wep128Key2[WEP128_KEY_LEN];
+	unsigned char wep128Key3[WEP128_KEY_LEN];
+	unsigned char wep128Key4[WEP128_KEY_LEN];
+	unsigned char wmmEnabled;
+	unsigned char rateAdaptiveEnabled; // enable/disable rate adaptive
+	unsigned char wlanBand; // wlan band, bit0-11B, bit1-11G, bit2-11A
+	unsigned int fixedTxRate;
+
+#ifdef CONFIG_WIFI_SIMPLE_CONFIG
+	unsigned char wsc_disabled;
+	unsigned char wsc_configured;
+	unsigned char wsc_upnp_enabled;
+	unsigned char wsc_auth;
+	unsigned char wsc_enc;
+	unsigned char wscPsk[MAX_PSK_LEN+1];
+#endif
+#ifdef CONFIG_USB_RTL8187SU_SOFTAP
+	unsigned short mlcstRate;	// for multicast rate setting, 0:auto, bit 0-11 setting is same as fixedTxRate
+#endif
+
+#ifdef WLAN_11W
+	unsigned char dotIEEE80211W;
+	unsigned char sha256;
+#endif
+#ifdef WLAN_11R
+	unsigned char ft_enable;
+	unsigned char ft_mdid[5];
+	unsigned char ft_over_ds;
+	unsigned char ft_res_request;
+	int ft_r0key_timeout;
+	int ft_reasoc_timeout;
+	unsigned char ft_r0kh_id[49];
+	unsigned char ft_push;
+	unsigned char ft_kh_num;
+#endif
+#ifdef WLAN_11K
+	unsigned char rm_activated;
+#endif
+#ifdef WLAN_11V
+	unsigned char BssTransEnable;
+#endif
+#ifdef CTCOM_WLAN_REQ
+	unsigned char instnum;
+#endif
+#ifdef WLAN_LIMITED_STA_NUM
+	unsigned int stanum;
+#endif
+	unsigned int ingressLimitSpeed;
+	unsigned int egressLimitSpeed;
+#ifdef CONFIG_YUEME
+	char service[31];
+	char owner[31];
+	unsigned int macAccessMode;
+	unsigned int accessRuleEnable;
+	unsigned char allowedIPPort[257];
+	unsigned char dbus_instnum;
+#endif
+} __PACK__ MIB_CE_MBSSIB_T, *MIB_CE_MBSSIB_Tp;
+
+typedef struct mbssid_wep_entry {
+	unsigned char wep64Key1[WEP64_KEY_LEN];    // 3131313131: key is 11111
+	unsigned char wep64Key2[WEP64_KEY_LEN];    // 3232323232: key is 22222
+	unsigned char wep64Key3[WEP64_KEY_LEN];    // 3333333333: key is 33333
+	unsigned char wep64Key4[WEP64_KEY_LEN];    // 3434343434: key is 44444
+	unsigned char wep128Key1[WEP128_KEY_LEN];
+	unsigned char wep128Key2[WEP128_KEY_LEN];
+	unsigned char wep128Key3[WEP128_KEY_LEN];
+	unsigned char wep128Key4[WEP128_KEY_LEN];
+	unsigned char wepDefaultKey;                  // 0:key1, 1:key2, 2:key3, 3:key4
+	unsigned char wepKeyType;                     // 1:Hex, 0:ASCII
+} __PACK__ MIB_CE_MBSSIB_WEP_T, *MIB_CE_MBSSIB_WEP_Tp;
+
+#ifdef WLAN_ACL
+typedef struct wlac_entry {
+	unsigned char wlanIdx;
+	unsigned char macAddr[MAC_ADDR_LEN];
+	//unsigned char comment[COMMENT_LEN];
+} __PACK__ MIB_CE_WLAN_AC_T, *MIB_CE_WLAN_AC_Tp;
+#endif
+#ifdef WLAN_11R
+typedef struct wlftkh_entry {
+	unsigned char wlanIdx;
+	unsigned char intfIdx;
+	unsigned char addr[6];
+	unsigned char r0kh_id[49];
+	unsigned char key[33];
+} __PACK__ MIB_CE_WLAN_FTKH_T, *MIB_CE_WLAN_FTKH_Tp;
+#endif
+#ifdef WIFI_TIMER_SCHEDULE
+typedef struct wifi_timer_ex_entry {
+#ifdef _PRMT_X_CMCC_WLANSWITCHTC_
+	unsigned int instnum;
+#endif
+	unsigned char index;
+	unsigned char enable; //0:disable, 1:enable
+	unsigned char onoff; //0:turn off, 1: turn on
+	unsigned char Time[6]; //xx:xx
+	unsigned char day; // bit 7: Sunday, bit 1: Monday, ..., bit 6: Saturday
+	unsigned int SSIDMask; // bit 0-15 for 2G ssid, bit 16-31 for 5G ssid
+} __PACK__ MIB_CE_WIFI_TIMER_EX_T, *MIB_CE_WIFI_TIMER_EX_Tp;
+typedef struct wifi_timer_entry {
+	unsigned char index;
+	unsigned char startTime[6]; // xx:xx
+	unsigned char endTime[6];
+	unsigned char controlCycle; //day
+	unsigned char enable;
+	unsigned int SSIDMask; // bit 0-15 for 2G ssid, bit 16-31 for 5G ssid
+} __PACK__ MIB_CE_WIFI_TIMER_T, *MIB_CE_WIFI_TIMER_Tp;
+#endif
+#endif // of WLAN_SUPPORT
+
+#ifdef CONFIG_LED_INDICATOR_TIMER
+typedef struct day_schedule_entry {
+	unsigned char enable;	//0:disable, 1:enable
+	unsigned char ctlCycle;
+	unsigned char startHour;
+	unsigned char startMin;
+	unsigned char endHour;
+	unsigned char endMin;
+} __PACK__ MIB_CE_DAY_SCHED_T, *MIB_CE_DAY_SCHED_Tp;
+#endif
+
+#ifdef CONFIG_RG_SLEEPMODE_TIMER
+typedef struct sleepmode_scheduley_entry {
+	unsigned char index;
+	unsigned char enable; //0:disable, 1:enable
+	unsigned char onoff; //0:turn off, 1: turn on
+	unsigned char hour;
+	unsigned char minute;
+	unsigned char day; // bit 0: with immediate effect, bit 1: Monday, ..., bit 6: Saturday, bit 7: Sunday
+} __PACK__ MIB_CE_RG_SLEEPMODE_SCHED_T, *MIB_CE_RG_SLEEPMODE_SCHED_Tp;
+#endif
+
+// Mason Yu. combine_1p_4p_PortMapping
+typedef struct swport_entry {
+	// used for Ethernet to PVC mapping
+	unsigned int pvcItf;
+	unsigned char itfGroup;
+	// used for VLAN config
+	unsigned char pvid;
+	unsigned char egressTagAction;
+	// used for Link Mode setting
+	unsigned char linkMode;	// 10/100 half/full
+	unsigned char duplex;
+	unsigned char speed;
+	unsigned char enable;
+} __PACK__ MIB_CE_SW_PORT_T, *MIB_CE_SW_PORT_Tp;
+
+//ql 20081119 for traffic shaping
+#ifdef CONFIG_USER_IP_QOS
+typedef struct ipqos_tc_entry {
+	unsigned char  entryid    ;// id of this rules
+	unsigned int   ifIndex    ;
+	unsigned char  srcip[IP_ADDR_LEN];
+	unsigned char  smaskbits  ;//source subnetmask bit number,default 0
+	unsigned char  dstip[IP_ADDR_LEN];
+	unsigned char  dmaskbits  ;
+	unsigned short sport      ;
+	unsigned short dport      ;
+	unsigned char  protoType  ;//0-none, 1-ICMP, 2-TCP, 3-UDP, 4-TCP/UDP
+	unsigned int   limitSpeed ;
+#ifdef BR_ROUTE_ONEPVC
+	unsigned char cmode;
+#endif
+#ifdef CONFIG_IPV6
+	unsigned char	IpProtocol;          // 1: IPv4, 2:IPv6
+	unsigned char 	sip6[IP6_ADDR_LEN];
+	unsigned char 	dip6[IP6_ADDR_LEN];
+	unsigned char 	sip6PrefixLen;
+	unsigned char 	dip6PrefixLen;
+#endif
+	unsigned char	direction;	//QOS_DIRECTION_T
+} __PACK__ MIB_CE_IP_TC_T, *MIB_CE_IP_TC_Tp;
+#endif
+
+// Magician: E8B security
+typedef struct brgmac_entry {
+	unsigned char protoType;	//协议类型
+	unsigned char direction;	//帧方向(0- LAN'WAN;  1- WAN'LAN;  2- LAN<->WAN)
+	unsigned char allPort;		// 1- 全选; 0- 不全选
+	unsigned char portNum;	//选中port数
+	unsigned int ifIndex[8];			//端口名
+	char dmac[20];		//目标MAC地址
+	char smac[20];		//源MAC地址
+} __PACK__ MIB_CE_BRGMAC_T, *MIB_CE_BRGMAC_Tp;
+
+typedef struct routemac_entry {
+	char mac[20];			//目标MAC地址
+	char devname[32];		//源MAC地址
+	unsigned char mode; // 0-black list, 1-white list
+#ifdef MAC_FILTER_BLOCKTIMES_SUPPORT
+	unsigned char enable;
+	unsigned char instnum;
+#endif
+} __PACK__ MIB_CE_ROUTEMAC_T, *MIB_CE_ROUTEMAC_Tp;
+
+#ifdef SUPPORT_ACCESS_RIGHT
+typedef struct lanhost_accessright_entry {
+	unsigned char  mac[MAC_ADDR_LEN];			//mac address
+	unsigned char  internetAccessRight;
+	unsigned char  storageAccessRight;
+} __PACK__ MIB_LAN_HOST_ACCESS_RIGHT_T, *MIB_LAN_HOST_ACCESS_RIGHT_Tp;
+#endif
+
+#ifdef CONFIG_USER_LAN_BANDWIDTH_CONTROL
+typedef struct lanhost_bandwidth_entry {
+	unsigned char mac[MAC_ADDR_LEN];			//mac address
+	unsigned int  maxUsBandwidth;
+	unsigned int  maxDsBandwidth;
+#if defined(CONFIG_USER_LAN_BANDWIDTH_EX_CONTROL)
+	unsigned int  minUsBandwidth;
+	unsigned int  minDsBandwidth;
+#endif
+} __PACK__ MIB_LAN_HOST_BANDWIDTH_T, *MIB_LAN_HOST_BANDWIDTH_Tp;
+#endif
+
+#ifdef CONFIG_USER_LANNETINFO
+typedef struct lan_devname_entry {
+	unsigned char mac[MAC_ADDR_LEN];			//mac address
+	char devName[64];
+#ifdef CONFIG_CU	
+	char devType[32];
+#endif
+	unsigned char auto_add; // 0: add by AddObject RPC, 1: auto add from Host objects
+	unsigned int instNum;		//CWMP instance number
+} __PACK__ MIB_LAN_DEV_NAME_T, *MIB_LAN_DEV_NAME_Tp;
+#endif
+
+// End Magician
+
+#define EXC_DESTIP		0x0001
+#define EXC_SOURCEIP 	0x0002
+#define EXC_PROTOCOL 	0x0004
+#define EXC_DESTPORT	0x0008
+#define EXC_SOURCEPORT 	0x0010
+#define EXC_SOURCEMAC 	0x0020
+#define EXC_DESTMAC 		0x0040
+#define EXC_DSCP 		0x0080
+#define EXC_ETHERNETPRIORITY 0x0100
+#define EXC_VLANID		0x0200
+/* set Classification.1.ClassInterface to wan interface. */
+#define INGRESS_IS_WAN	0x8000
+/* set ClassInterface to empty string.*/
+#define INGRESS_IS_ALL	0x4000
+
+#ifdef QOS_SPEED_LIMIT_SUPPORT
+typedef struct ipqos_speedrank_entry{
+	unsigned char index;
+	unsigned char prior;
+	unsigned char speed;
+	unsigned char count;
+} __PACK__ MIB_CE_IP_QOS_SPEEDRANK_T,MIB_CE_IP_QOS_SPEEDRANK_Tp;
+#endif
+
+#ifdef CONFIG_USER_IP_QOS
+typedef struct ipqos_queue_entry {
+	unsigned char enable;	// enable/disable this queue
+	unsigned char weight;
+	int car;
+#ifdef _CWMP_MIB_ /*mib for cwmp-tr069*/
+	unsigned int QueueInstNum;
+#endif
+#if defined(CONFIG_USER_IP_QOS) && !defined(NEW_IP_QOS_SUPPORT)
+	unsigned int outif;	// outbound interface
+	unsigned char prior;	// assign to priority queue
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	unsigned int upmaxrate;
+	unsigned int downmaxrate;
+         unsigned char dscp;
+	unsigned char logEnable;
+#endif
+	unsigned char desc[MAX_QUEUE_DESC_LEN]; // string of description
+#endif
+} __PACK__ MIB_CE_IP_QOS_QUEUE_T, *MIB_CE_IP_QOS_QUEUE_Tp;
+#endif
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+typedef struct ipqos_classfication_entry {
+	unsigned char cls_id;
+	unsigned char queue;	
+	unsigned short m_dscp;
+	unsigned short m_1p;
+
+} __PACK__ MIB_CE_IP_QOS_CLASSFICATION_T, *MIB_CE_IP_QOS_CLASSFICATION_Tp;
+
+typedef struct ipqos_classficationtype_entry {
+		unsigned char sip[IP_ADDR_LEN];
+		unsigned char sip_end[IP_ADDR_LEN];
+		unsigned short sPort;
+		unsigned short sPortRangeMax;
+		unsigned char dip[IP_ADDR_LEN];
+		unsigned char dip_end[IP_ADDR_LEN];
+		unsigned short dPort;
+		unsigned short dPortRangeMax;	// 0x0 or dPort ~ dPortRangeMax
+		unsigned short ethType; 		// Ethernet Type: 0x0800, 0x8863, 0x8864, .....
+		unsigned char protoType;
+		
+		unsigned char smac[MAC_ADDR_LEN];
+		unsigned char smac_end[MAC_ADDR_LEN];
+		unsigned char dmac[MAC_ADDR_LEN];
+		unsigned char dmac_end[MAC_ADDR_LEN];
+#ifdef CONFIG_IPV6
+		unsigned char	sip6[IP6_ADDR_LEN];
+		unsigned char	dip6[IP6_ADDR_LEN];
+		unsigned short  sPort6;
+		unsigned short  sPort6RangeMax;
+		unsigned short  dPort6;
+		unsigned short  dPort6RangeMax;	// 0x0 or dPort ~ dPortRangeMax
+		unsigned char   tc;      //IPv6 traffic class
+		unsigned char   tc_end;      //IPv6 traffic class
+#endif
+		unsigned char phyPort;
+		unsigned char phyPort_end;
+		unsigned char tos;	// mark IP Type of Service
+		unsigned char vlan1p; //
+		unsigned char vlan1p_end;
+		unsigned char qosDscp;//ql
+		unsigned char qosDscp_end;
+		unsigned char cls_id;/*ipqos_classfication_entry.cls_id*/
+		unsigned int wanitf;	// outbound interface
+		unsigned int classficationType;/*SMAC,DMAC,SIP,DIP,.......*/
+} __PACK__ MIB_CE_IP_QOS_CLASSFICATIONTYPE_T, *MIB_CE_IP_QOS_CLASSFICATIONTYPE_Tp;
+
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+
+#define QOSCLASSFICATION_TO_QOSRULE_ACTION_DEL 0
+#define QOSCLASSFICATION_TO_QOSRULE_ACTION_ADD 1
+#define QOSCLASSFICATION_TO_QOSRULE_ACTION_MODIFY 2
+
+
+#define IP_QOS_CLASSFICATION_ID_START 0
+#define IP_QOS_CLASSFICATION_QOS_ID_OFFSET 100
+enum IP_QOS_CLASSFICATIONTYPE{
+	IP_QOS_CLASSFICATIONTYPE_SMAC=0,
+	IP_QOS_CLASSFICATIONTYPE_DMAC,
+	IP_QOS_CLASSFICATIONTYPE_8021P,
+	IP_QOS_CLASSFICATIONTYPE_SIP,
+	IP_QOS_CLASSFICATIONTYPE_DIP,
+	IP_QOS_CLASSFICATIONTYPE_SPORT,
+	IP_QOS_CLASSFICATIONTYPE_DPORT,
+	IP_QOS_CLASSFICATIONTYPE_TOS,
+	IP_QOS_CLASSFICATIONTYPE_DSCP,
+#ifdef CONFIG_IPV6
+	IP_QOS_CLASSFICATIONTYPE_SIP6,
+	IP_QOS_CLASSFICATIONTYPE_DIP6,
+	IP_QOS_CLASSFICATIONTYPE_SPORT6,
+	IP_QOS_CLASSFICATIONTYPE_DPORT6,
+	IP_QOS_CLASSFICATIONTYPE_TrafficClass,
+#endif
+	IP_QOS_CLASSFICATIONTYPE_WANINTERFACE,	
+	IP_QOS_CLASSFICATIONTYPE_LANINTERFACE,
+	IP_QOS_CLASSFICATIONTYPE_ETHERTYPE,
+	IP_QOS_CLASSFICATIONTYPE_MAX
+};
+
+enum IP_QOS_PROTOCOL{
+	IP_QOS_PROTOCOL_TCP=0,
+	IP_QOS_PROTOCOL_UDP,
+	IP_QOS_PROTOCOL_TCPUDP,
+	IP_QOS_PROTOCOL_ICMP,
+	IP_QOS_PROTOCOL_ICMP6,
+	IP_QOS_PROTOCOL_RTP,
+	IP_QOS_PROTOCOL_ALL,
+	IP_QOS_PROTOCOL_MAX	
+};
+#endif
+
+
+#endif
+
+#ifdef CONFIG_USER_IP_QOS
+typedef struct ipqos_entry {
+    unsigned char RuleName[32]  ;
+	unsigned char sip[IP_ADDR_LEN];
+	unsigned char smaskbit;
+	unsigned short sPort;
+	unsigned short sPortRangeMax;	// 0x0 or sPort ~ sPortRangeMax
+	unsigned char dip[IP_ADDR_LEN];
+	unsigned char dmaskbit;
+	unsigned short dPort;
+	unsigned short dPortRangeMax;	// 0x0 or dPort ~ dPortRangeMax
+	unsigned short ethType;			// Ethernet Type: 0x0800, 0x8863, 0x8864, .....
+	unsigned char protoType;
+	unsigned char smac[MAC_ADDR_LEN];
+	unsigned char dmac[MAC_ADDR_LEN];
+	unsigned char phyPort;
+#if defined(CONFIG_USER_IP_QOS) || defined(QOS_DIFFSERV)
+	unsigned char qosDscp;//ql stream based on DSCP
+#endif
+#ifdef CONFIG_USER_IP_QOS
+	unsigned char vlan1p;	//ql stream based on 802.1p
+	unsigned char tos;
+#endif
+	unsigned int outif;	// outbound interface
+	unsigned char prior;	// assign to priority queue
+#ifdef QOS_DSCP
+	unsigned char dscp;	// Jenny, DSCP enable flag: 1: DSCP, 0: TOS
+#endif
+	unsigned char m_ipprio;	// mark IP precedence
+	unsigned char m_iptos;	// mark IP Type of Service
+	unsigned short m_vid; //VLAN ID, 1~4095
+	unsigned char m_1p;	// mark 802.1p: 0: none, 1: prio 0, 2: prio 1, ...
+#ifdef CONFIG_USER_IP_QOS
+	unsigned char m_dscp;//ql
+#endif
+	unsigned char enable;
+
+#ifdef _PRMT_X_CT_COM_QOS_
+	unsigned char modeTr69;//for tr069
+	unsigned char minphyPort;
+	unsigned char cttypemap[CT_TYPE_NUM];
+#endif
+
+#ifdef _CWMP_MIB_ /*jiunming, mib for cwmp-tr069*/
+	unsigned int  InstanceNum;
+#endif
+
+#ifdef QOS_SPEED_LIMIT_SUPPORT
+	unsigned char limitSpeedEnabled;
+	unsigned char limitSpeedRank;//rank more little,speed more high
+#endif
+
+#ifdef QOS_DIFFSERV
+	unsigned int ifIndex;
+	unsigned char enDiffserv;	// for diffserv chain if this flag is set to 1
+	unsigned short totalBandwidth;
+	unsigned short htbRate;	// bandwidth division rate for HTB
+	unsigned int latency ;
+	unsigned int limitSpeed ;	// police rate limit
+	unsigned char policing;	// 1:drop; 2:continue
+#endif
+	unsigned short flags;		// TR069 flags used for whether the member is exclude or not
+#ifdef BR_ROUTE_ONEPVC
+	unsigned char cmode;
+#endif
+#ifdef _PRMT_SC_CT_COM_InternetService_UserQoS_
+	unsigned char cwmpSrcMacMode;//sichuan only set srcmac parameter
+#endif
+#ifdef CONFIG_IPV6
+	unsigned char	IpProtocol;          // 1: IPv4, 2:IPv6
+	unsigned char 	sip6[IP6_ADDR_LEN];
+	unsigned char 	dip6[IP6_ADDR_LEN];
+	unsigned char 	sip6PrefixLen;
+	unsigned char 	dip6PrefixLen;
+#endif
+	unsigned int applicationtype;
+	unsigned int classtype;
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+    unsigned char domainName[64];
+    unsigned char dportNot;
+	unsigned int classficationType;/*SMAC DMAC SIP DIP.....*/
+	unsigned char cls_id;/*classfication cls_id*/
+	unsigned char sip_end[IP_ADDR_LEN];
+	unsigned char dip_end[IP_ADDR_LEN];
+	unsigned char smac_end[MAC_ADDR_LEN];
+	unsigned char dmac_end[MAC_ADDR_LEN];
+	unsigned char vlan1p_end;
+	unsigned char qosDscp_end;
+	unsigned char phyPort_end;
+#endif
+} __PACK__ MIB_CE_IP_QOS_T, *MIB_CE_IP_QOS_Tp;
+#endif
+
+enum{IP_QOS_APP_NONE = 0, IP_QOS_APP_VOIP, IP_QOS_APP_TR069};
+typedef struct ipqos_app_entry {
+	unsigned char appName;	 // 0: None, 1: VOIP, 2: TR069
+	unsigned char prior;	 // assign to priority queue
+	unsigned int  InstanceNum;
+} __PACK__ MIB_CE_IP_QOS_APP_T, *MIB_CE_IP_QOS_APP_Tp;
+
+typedef struct acc_entry {
+	unsigned char telnet;
+	unsigned char ftp;
+	unsigned char tftp;
+	unsigned char web;
+	unsigned char snmp;
+	unsigned char ssh;
+	unsigned char icmp;
+	unsigned char netlog;
+	unsigned char smb;
+	//unsigned char nop; // added for alignment
+	unsigned short telnet_port;
+	unsigned short web_port;
+	unsigned short ftp_port;
+	unsigned char https;
+	unsigned short https_port;
+	unsigned short ssh_port;
+	unsigned short tftp_port;
+	unsigned short snmp_port;
+} __PACK__ MIB_CE_ACC_T, *MIB_CE_ACC_Tp;
+
+#ifdef _CWMP_MIB_ /*jiunming, mib for cwmp-tr069*/
+#ifdef WLAN_SUPPORT
+typedef struct cwmp_psk {
+	unsigned char index;
+	unsigned char presharedkey[64+1];
+	unsigned char keypassphrase[63+1];
+} __PACK__ CWMP_PSK_T, *CWMP_PSK_Tp;
+#endif /*WLAN_SUPPORT*/
+
+#ifdef _PRMT_X_CT_COM_ALARM_MONITOR_
+#define MAX_CT_ALARM_MONITOR 32
+
+typedef enum {
+	ALARM_MODE_NONE = 0,
+	ALARM_MODE_ADD,
+	ALARM_MODE_AVER,
+	ALARM_MODE_INST
+} ALARM_MODE_T;
+
+enum {
+/* 设备功能类 */
+CTCOM_ALARM_DEV_RESTART = 		104001,
+CTCOM_ALARM_PORT_FAILED = 			104006,
+
+/* WLAN 相关 */
+CTCOM_ALARM_WLAN_HW_FAIL = 		104012,
+CTCOM_ALARM_APP_FAIL =			104012,
+
+/* 设备状态、统计参数类 */
+CTCOM_ALARM_CPU_HIGH = 			104030,
+CTCOM_ALARM_LOG_SPACE =			104031,
+CTCOM_ALARM_LOGING_TRY_LIMIT =		104032,
+CTCOM_ALARM_OUT_OF_BANDWIDTH =		104035,
+CTCOM_ALARM_RAM_HIGH =			104036,
+
+/* 文件相关 */
+CTCOM_ALARM_SERVER_UNREACHABLE =	104050,
+CTCOM_ALARM_AUTH_FAILED =			104051,
+CTCOM_ALARM_DOWNLAOD_TIMEOUT =		104052,
+CTCOM_ALARM_FILE_NOT_FOUND =		104053,
+CTCOM_ALARM_CONF_UPDATE_FAIL =		104054,
+CTCOM_ALARM_CONF_BACKUP_FAIL =		104055,
+CTCOM_ALARM_CONF_RESTORE_FAIL =	104056,
+CTCOM_ALARM_CONF_INVALID =			104057,
+CTCOM_ALARM_SW_UPGRADE_FAIL =		104058,
+CTCOM_ALARM_OUT_OF_FLAH_SPACE =	104059,
+CTCOM_ALARM_USER_UPGRADE_FAIL =	104060,
+CTCOM_ALARM_LOG_UPLOAD_FAILED =	104061,
+
+/* VOIP Service */
+CTCOM_ALARM_VOICE_SERVER_UNREACHABLE = 104102,
+CTCOM_ALARM_VOICE_AUTH_FAIL = 			104104,
+CTCOM_ALARM_VOICE_OTHER_FAIL =			104105,
+CTCOM_ALARM_VOICE_NO_RESPONSE =		104106,
+
+/* INTERNET Service */
+CTCOM_ALARM_INET_DIAL_FAIL = 			104111,
+CTCOM_ALARM_INET_REDIAL =				104112,
+
+/* IPTV Service */
+CTCOM_ALARM_IPTV_DIAL_FAIL = 			104122,
+
+/* 业务类 - DDNS */
+CTCOM_ALARM_DDNS_SERV_UNAVAILABLE =	104142,
+CTCOM_ALARM_DDNS_AUTH_FAIL =		104143,
+} CTCOM_ALARM_NUM;
+
+typedef struct cwmp_ct_alarm {
+	unsigned char para[PARA_NAME_LEN];
+	unsigned int alarmNumber;
+	unsigned int period;
+	unsigned int mode;
+	int limitMin;
+	int limitMax;
+	unsigned int InstanceNum;
+	unsigned char is_cleared;
+} __PACK__ CWMP_CT_ALARM_T, *CWMP_CT_ALARM_Tp;
+
+typedef struct cwmp_ct_monitor {
+	unsigned char para[PARA_NAME_LEN];
+	unsigned int period;
+	unsigned int InstanceNum;
+} __PACK__ CWMP_CT_MONITOR_T, *CWMP_CT_MONITOR_Tp;
+#endif
+
+#ifdef _PRMT_X_CT_COM_PING_
+#define MAX_CT_PING 8
+
+typedef struct cwmp_ct_ping {
+	unsigned char diag_state;
+	unsigned int InstanceNum;
+	unsigned char interface[256+1];
+	unsigned char host[256+1];
+	unsigned int repetitions;
+	unsigned int timeout;
+	unsigned int size;
+	unsigned int dscp;
+	unsigned int interval;
+} __PACK__ CWMP_CT_PING_T, *CWMP_CT_PING_Tp;
+
+#endif
+
+#endif /*_CWMP_MIB_*/
+
+// Added by Mason Yu
+typedef struct macBaseDhcp_entry {
+	unsigned char macAddr_Dhcp[MAC_ADDR_LEN];
+	unsigned char ipAddr_Dhcp[IP_ADDR_LEN];
+} __PACK__ MIB_CE_MAC_BASE_DHCP_T, *MIB_CE_MAC_BASE_DHCP_Tp;
+
+
+// Added by Mason Yu
+typedef struct ddns_entry {
+	unsigned char provider[65];
+	unsigned char hostname[130];
+	unsigned char interface[10];
+	unsigned char ifname[32];
+	unsigned char username[33];
+	unsigned char password[33];
+	unsigned char Enabled;
+ 	unsigned int  InstanceNum;
+ 	unsigned short ServicePort;
+} __PACK__ MIB_CE_DDNS_T, *MIB_CE_DDNS_Tp;
+
+// Jenny, add for PPPoE session information
+typedef struct pppoeSession_entry {
+	unsigned int  uifno;
+	unsigned short sessionId;
+	unsigned char acMac[MAC_ADDR_LEN];
+} __PACK__ MIB_CE_PPPOE_SESSION_T, *MIB_CE_PPPOE_SESSION_Tp;
+
+#ifdef ACCOUNT_CONFIG
+// Jenny, add for user account information
+typedef struct accountConfig_entry {
+	unsigned char userName[MAX_NAME_LEN];	// user name
+	unsigned char userPassword[MAX_NAME_LEN];	// user password
+	unsigned char privilege;	// account privilege, refer to ACC_PRIV_T
+} __PACK__ MIB_CE_ACCOUNT_CONFIG_T, *MIB_CE_ACCOUNT_CONFIG_Tp;
+#endif
+
+#ifdef LAYER7_FILTER_SUPPORT //star: for layer7 filter
+#define MAX_APP_NAME  20
+typedef struct layer7_entry{
+	unsigned char appname[MAX_APP_NAME];
+}LAYER7_FILTER_T,*LAYER7_FILTER_Tp;
+
+#endif
+
+/*ping_zhang:20080919 START:add for new telefonica tr069 request: dhcp option*/
+#ifdef _PRMT_X_TELEFONICA_ES_DHCPOPTION_
+#define MODE_LEN  15
+#define OPTION_LEN   32
+/*ping_zhang:20090319 START:replace ip range with serving pool of tr069*/
+#define OPTION_60_LEN   100
+/*ping_zhang:20090319 END*/
+#define GENERAL_LEN  64
+typedef struct dhcp_serving_pool {
+	//general
+	unsigned char enable;
+	unsigned int poolorder;
+	unsigned char poolname[MAX_NAME_LEN];
+/*ping_zhang:20090319 START:replace ip range with serving pool of tr069*/
+	unsigned char deviceType;
+	unsigned char rsvOptCode;
+/*ping_zhang:20090319 END*/
+	//criterion
+	unsigned char sourceinterface;  // 0:ignore, bit0: LAN1, bit1:LAN2, bit2:LAN3, bit3:LAN4, bit4:WLAN0
+/*ping_zhang:20090319 START:replace ip range with serving pool of tr069*/
+	//unsigned char vendorclass[OPTION_LEN];
+	unsigned char vendorclass[OPTION_60_LEN+1];
+/*ping_zhang:20090319 END*/
+	unsigned char vendorclassflag;
+	unsigned char vendorclassmode[MODE_LEN];
+	unsigned char clientid[OPTION_LEN];
+	unsigned char clientidflag;
+	unsigned char userclass[OPTION_LEN];
+	unsigned char userclassflag;
+	unsigned char chaddr[MAC_ADDR_LEN];
+	unsigned char chaddrmask[MAC_ADDR_LEN];
+	unsigned char chaddrflag;
+	//config
+	unsigned char localserved;
+	unsigned char startaddr[IP_ADDR_LEN];
+	unsigned char endaddr[IP_ADDR_LEN];
+	unsigned char subnetmask[IP_ADDR_LEN];
+	unsigned char iprouter[IP_ADDR_LEN];
+	unsigned char dnsserver1[IP_ADDR_LEN];
+	unsigned char dnsserver2[IP_ADDR_LEN];
+	unsigned char dnsserver3[IP_ADDR_LEN];
+	unsigned char domainname[GENERAL_LEN];
+	int leasetime;
+	unsigned char dhcprelayip[IP_ADDR_LEN];
+	unsigned char dnsservermode;
+
+#ifdef _CWMP_MIB_
+	unsigned int  InstanceNum;
+#endif
+
+} __PACK__ DHCPS_SERVING_POOL_T,*DHCPS_SERVING_POOL_Tp;
+#endif
+/*ping_zhang:20080919 END*/
+
+#ifdef PARENTAL_CTRL
+#define MAX_PARENTCTRL_USER_LEN 32
+#define MAX_PARENTCTRL_USER_NUM 16
+#define SUNDAY 		(1<<0)
+#define MONDAY 		(1<<1)
+#define TUESDAY 		(1<<2)
+#define WEDNESSDAY (1<<3)
+#define THURSDAY 	(1<<4)
+#define FRIDAY 		(1<<5)
+#define SATURDAY 	(1<<6)
+typedef struct parentctrl_entry {
+	unsigned char username[MAX_PARENTCTRL_USER_LEN];
+	unsigned char mac[MAC_ADDR_LEN];
+	unsigned char controlled_day;
+	unsigned char start_hr;
+	unsigned char start_min;
+	unsigned char end_hr;
+	unsigned char end_min;
+	unsigned char cur_state;
+} __PACK__ MIB_PARENT_CTRL_T, *MIB_PARENT_CTRL_Tp;
+
+#endif
+
+
+#ifdef WEB_REDIRECT_BY_MAC
+#define MAX_WEB_REDIR_BY_MAC		16
+#define WEB_REDIR_BY_MAC_PORT		18080
+typedef struct WebRedirByMAC_entry{
+	unsigned char mac[MAC_ADDR_LEN];
+} __PACK__ MIB_WEB_REDIR_BY_MAC_T, *MIB_WEB_REDIR_BY_MAC_Tp;
+#endif
+
+#ifdef _SUPPORT_CAPTIVEPORTAL_PROFILE_
+#define MAX_ALLOWED_LIST 500
+#define CAPTIVEPORTAL_PORT 18182
+#define CP_MASK_DONOT_CARE 0xFF
+
+typedef struct CaptivePortalAllowedList_entry
+{
+	unsigned char ip_addr[IP_ADDR_LEN];
+	unsigned char mask;
+} __PACK__ CWMP_CAPTIVEPORTAL_ALLOWED_LIST_T, *CWMP_CAPTIVEPORTAL_ALLOWED_LIST_Tp;
+#endif
+
+#ifdef SUPPORT_WEB_REDIRECT
+#define MAX_REDIRECT_URL_LIST 8
+#define MAX_REDIRECT_WHITE_LIST 8
+#define MAX_KEYWD_LEN 32
+
+typedef struct redirect_url_list_entry
+{
+	char srcUrl[MAX_URL_LEN];
+	char dstUrl[MAX_URL_LEN];
+	int number;
+	int ipChanges; /* TODO: reset number when wan ip changes */
+} __PACK__ MIB_REDIRECT_URL_LIST_T, *MIB_REDIRECT_URL_LIST_Tp;
+
+typedef struct redirect_white_List_entry
+{
+	char url[MAX_URL_LEN];
+	char keyword[MAX_KEYWD_LEN];
+} __PACK__ MIB_REDIRECT_WHITE_LIST_T, *MIB_REDIRECT_WHITE_LIST_Tp;
+#endif
+
+#ifdef WLAN_QoS
+typedef struct wlan_qos_entry {
+	unsigned int txop;
+	unsigned int ecwmax;
+	unsigned int ecwmin;
+	unsigned int aifsn;
+	unsigned int ack;
+} __PACK__ MIB_WLAN_QOS_T, *MIB_WLAN_QOS_Tp;
+#endif // WLAN_QoS
+
+#ifdef SUPPORT_DHCP_RESERVED_IPADDR
+typedef struct dhcp_reserved_ipaddr_entry {
+	unsigned int InstanceNum;//0:for default dhcp server, others: the same num with conditional pool's instance number
+	unsigned char IPAddr[IP_ADDR_LEN];//reserved ip address
+} __PACK__ MIB_DHCP_RESERVED_IPADDR_T, *MIB_DHCP_RESERVED_IPADDR_Tp;
+#endif //SUPPORT_DHCP_RESERVED_IPADDR
+
+#ifdef CONFIG_USER_PPPOMODEM
+#define NO_PINCODE ((unsigned short)-1)
+typedef struct wan_3g_entry {
+	unsigned char enable;
+	unsigned char auth; //PPP_AUTH_T
+	unsigned char ctype; //PPP_CONNECT_TYPE_T
+	unsigned char napt;
+	unsigned short pin;
+	unsigned short idletime;
+	unsigned short mtu;
+	unsigned char dgw;
+	unsigned char apn[MAX_PPP_NAME_LEN+1];
+	unsigned char dial[16+1];
+	unsigned char username[MAX_PPP_NAME_LEN+1];
+	unsigned char password[MAX_NAME_LEN];
+	//paula, 3g backup PPP
+	unsigned char backup;
+	unsigned short backup_timer;
+} __PACK__ MIB_WAN_3G_T, *MIB_WAN_3G_Tp;
+#endif //CONFIG_USER_PPPOMODEM
+
+#ifdef CONFIG_USER_MINIDLNA
+#define DIR_MAX_LENGTH 63
+typedef struct dms_entry {
+	unsigned char enable;
+	unsigned char directory[DIR_MAX_LENGTH+1];
+} __PACK__ MIB_DMS_T, *MIB_DMS_Tp;
+#endif
+
+#ifdef CONFIG_IPV6
+#ifdef CONFIG_USER_DHCPV6_ISC_DHCP411
+typedef struct name_server_entry {
+	unsigned char nameServer[MAX_V6_IP_LEN];
+} __PACK__ MIB_DHCPV6S_NAME_SERVER_T, *MIB_DHCPV6S_NAME_SERVER_Tp;
+
+typedef struct domain_search_entry {
+	unsigned char domain[MAX_DOMAIN_LENGTH];
+} __PACK__ MIB_DHCPV6S_DOMAIN_SEARCH_T, *MIB_DHCPV6S_DOMAIN_SEARCH_Tp;
+
+#endif
+#endif
+
+// Mason Yu. 2630-e8b
+#ifdef VIRTUAL_SERVER_SUPPORT //暂时屏蔽
+typedef struct vtlsvr_entryx {
+	unsigned char serverIp[IP_ADDR_LEN];	//服务器IP地址
+	//unsigned int serverIp;		//服务器IP地址
+	unsigned char svrName[60];	//服务器名
+	unsigned short wanStartPort;	//外部初始端口
+	unsigned short wanEndPort;	//外部终止端口
+	unsigned short lanPort;		//内部端口
+	unsigned char protoType;	//协议(0- TCP/UDP;  1- TCP;  2- UDP)
+	//unsigned int remotehost  ;      //源IP，dummy
+	//unsigned int leasetime  ;        //生效时间，dummy
+	unsigned int  InstanceNum; // for tr069
+	unsigned char enable;
+	unsigned char remotehost[IP_ADDR_LEN];
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+	unsigned int ifIndex;
+#endif
+} __PACK__ MIB_VIRTUAL_SVR_T, *MIB_VIRTUAL_SVR_Tp;
+
+#define VIRTUAL_SERVER_RULES   32
+#endif
+
+typedef enum { AUTH_AUTO=0, AUTH_PAP, AUTH_CHAP, AUTH_CHAPMSV2 } VPN_AUTH_TYPE_T;
+typedef enum { ENC_NONE=0, ENC_MPPE, ENC_MPPE_N_MPPC } VPN_ENC_TYPE_T;
+
+#if defined(CONFIG_USER_L2TPD_LNS) || defined(CONFIG_USER_PPTPD_PPTPD)
+enum VPN_TYPE {
+	VPN_PPTP,	//pptp
+	VPN_L2TP	//l2tp
+};
+
+typedef struct vpnd_entry {
+	unsigned char type;	//0-PPTP  1-L2TP
+	unsigned char authtype;//0-auto; 1-pap; 2-chap; 3-chapmsv2
+	unsigned char enctype;//0-none; 1-MPPE; 2-MPPE&MPPC
+#ifdef CONFIG_USER_L2TPD_LNS
+	unsigned char tunnel_auth;//0- tunnel without auth 1-tunnel with auth
+	unsigned char tunnel_key[MAX_NAME_LEN];
+#endif
+	unsigned int  peeraddr;
+	unsigned int  localaddr;
+} __PACK__ MIB_VPND_T, *MIB_VPND_Tp;
+
+typedef struct vpn_account_entry {
+	unsigned int  idx;//rule index
+	unsigned char type;
+	unsigned char enable;//0-disable account  1-enable account
+	unsigned char name[MAX_NAME_LEN];
+	unsigned char username[MAX_NAME_LEN];
+	unsigned char password[MAX_NAME_LEN];
+} __PACK__ MIB_VPN_ACCOUNT_T, *MIB_VPN_ACCOUNT_Tp;
+#endif
+
+#ifdef CONFIG_USER_PPTP_CLIENT_PPTP
+typedef struct pptp_entry {
+	unsigned char vpn_enable;
+	unsigned int idx;	//rule index
+	unsigned int ifIndex;		// Mason Yu. Add VPN ifIndex
+#ifdef CONFIG_USER_PPTPD_PPTPD
+	unsigned char name[MAX_NAME_LEN];
+#endif
+	unsigned char server[MAX_DOMAIN_LENGTH];
+	unsigned char username[MAX_VPN_ACC_PW_LEN+1];
+	unsigned char password[MAX_VPN_ACC_PW_LEN+1];
+	unsigned char authtype;//0-auto; 1-pap; 2-chap; 3-chapmsv2
+    unsigned char enctype;//0-none; 1-MPPE; 2-MPPE&MPPC
+    unsigned char conntype;//0-persistent; 1-dial_on_demand; 2-manual; 3-none
+	unsigned int idletime;
+	unsigned char dgw;	// 1-default gateway
+#ifdef CONFIG_IPV6_VPN
+	unsigned char IpProtocol; 		 // 1: IPv4, 2: IPv6
+#endif
+	unsigned char tunnelName[MAX_NAME_LEN];
+	unsigned char dbustunnelName[MAX_NAME_LEN];
+	unsigned char userID[MAX_NAME_LEN];
+	unsigned short callid; 		//client CallID
+	unsigned short peer_callid; //gateway CallID
+	unsigned int rg_wan_idx;
+	unsigned int acl_idx;
+	unsigned char priority;
+	unsigned int vpn_port;
+	unsigned char vpn_type;
+	unsigned char vpn_mode;
+	unsigned char attach_mode;
+	unsigned char account_proxy[MAX_DOMAIN_LENGTH];	//account proxy server address
+	unsigned char account_proxy_msg[MAX_DOMAIN_LENGTH];
+	int account_proxy_result;
+} __PACK__ MIB_PPTP_T, *MIB_PPTP_Tp;
+#endif //end of CONFIG_USER_PPTP_CLIENT_PPTP
+
+#ifdef CONFIG_USER_L2TPD_L2TPD
+typedef struct l2tp_entry {
+	unsigned char vpn_enable;
+	unsigned int idx;	//rule index
+	unsigned int ifIndex;		// Mason Yu. Add VPN ifIndex
+#ifdef CONFIG_USER_L2TPD_LNS
+	unsigned char name[MAX_NAME_LEN];
+#endif
+	unsigned char server[MAX_DOMAIN_LENGTH];	//server address
+	unsigned char tunnel_auth;
+	unsigned char secret[MAX_NAME_LEN];
+	unsigned char authtype;//0-auto; 1-pap; 2-chap; 3-chapmsv2
+	unsigned char enctype; //
+	unsigned char username[MAX_VPN_ACC_PW_LEN+1];
+	unsigned char password[MAX_VPN_ACC_PW_LEN+1];
+	unsigned char conntype;//0-persistent; 1-dial_on_demand; 2-manual; 3-none
+	unsigned int idletime;
+	unsigned int mtu;
+	unsigned char dgw;
+#ifdef CONFIG_IPV6_VPN
+	unsigned char IpProtocol; 		 // 1: IPv4, 2: IPv6
+#endif
+	unsigned char tunnelName[MAX_NAME_LEN];
+	unsigned char dbustunnelName[MAX_NAME_LEN];
+	unsigned char userID[MAX_NAME_LEN];
+	unsigned int rg_wan_idx;
+	unsigned short outer_port;
+	unsigned short tunnel_id;
+	unsigned short session_id;
+	unsigned short gateway_outer_port;
+	unsigned short gateway_tunnel_id;
+	unsigned short gateway_session_id;
+	unsigned int acl_idx;
+	unsigned char priority;
+	unsigned int vpn_port;
+	unsigned char vpn_type;
+	unsigned char vpn_mode;
+	unsigned char attach_mode;
+	unsigned char account_proxy[MAX_DOMAIN_LENGTH];	//account proxy server address
+	unsigned char account_proxy_msg[MAX_DOMAIN_LENGTH];
+	int account_proxy_result;
+} __PACK__ MIB_L2TP_T, *MIB_L2TP_Tp;
+#endif //end of CONFIG_USER_L2TPD_L2TPD
+
+#ifdef CONFIG_XFRM
+typedef struct ipsec_entry {
+	unsigned char enable;	 //0-disable; 1-enable;
+	unsigned char state;
+	unsigned char transportMode; //0-tunnel; 1-transport;
+	unsigned char negotiationType;	 //0-IKE; 1-manual;
+	unsigned char remoteTunnel[IP_ADDR_LEN];
+	unsigned char remoteIP[IP_ADDR_LEN];
+	unsigned char remoteMask;
+	unsigned char localTunnel[IP_ADDR_LEN];
+	unsigned char localIP[IP_ADDR_LEN];
+	unsigned char localMask;
+	unsigned char encapMode; //1-esp; 2-ah; 3-esp+ah;
+	unsigned char filterProtocol;	//0-any; 1-TCP; 2-UDP; 3-ICMP;
+	unsigned int filterPort;
+
+	//for manual
+	unsigned char espEncrypt; //esp encryption algorithm
+	unsigned char espEncryptKey[60];  //esp encryption key
+	unsigned char espAuth; //esp authentication algorithm
+	unsigned char espAuthKey[60];  //esp authentication key
+	unsigned char ahAuth; //ah authentication algorithm
+	unsigned char ahAuthKey[60];  //ah authentication key
+	unsigned int espINSPI;
+	unsigned int espOUTSPI;
+	unsigned int ahINSPI;
+	unsigned int ahOUTSPI;
+
+	//for ike
+	unsigned char ikeMode; //0-main; 1-aggressive;
+	unsigned char psk[130];
+	unsigned char ikeProposal[4];
+	unsigned char saProposal[4];
+	unsigned int ikeAliveTime;
+	unsigned int saAliveTime;
+	unsigned int saAliveByte;
+} __PACK__ MIB_IPSEC_T, *MIB_IPSEC_Tp;
+#endif
+
+#ifdef CONFIG_NET_IPIP
+typedef struct ipip_entry {
+	unsigned int idx;
+	unsigned int ifIndex;		// Mason Yu. Add VPN ifIndex
+	unsigned int daddr;
+	unsigned int saddr;
+	unsigned char dgw;
+} __PACK__ MIB_IPIP_T, *MIB_IPIP_Tp;
+#endif//endof CONFIG_NET_IPIP
+
+#ifdef CONFIG_APACHE_FELIX_FRAMEWORK
+#define OSGI_MAX_BUNDLE 50
+#define OSGI_MAX_PERMISSIONS 300
+
+typedef struct osgi_permission_entry
+{
+	char DUName[128];
+	unsigned int instNum;
+} __PACK__ MIB_CE_OSGI_PERMISSION_T, *MIB_CE_OSGI_PERMISSION_Tp;
+
+typedef struct osgi_permission_api_entry
+{
+	unsigned int DUInstNum;	// instance number of MIB_CE_OSGI_PERMISSION_T
+	unsigned int instNum;
+	char APIName[256];
+} __PACK__ MIB_CE_OSGI_PERMISSION_API_T, *MIB_CE_OSGI_PERMISSION_API_Tp;
+#endif
+
+// august: according Gao daren's settings, look below
+#define PORT_BAESD_MODE 0
+#define	VLAN_BASED_MODE 1
+
+// Kaohj -- Port binding config
+typedef struct port_binding_entry {
+	unsigned char pb_mode; // port binding mode: 0: port-based 1: vlan-based
+	unsigned short pb_vlan0_a; //port binding vlan ID
+	unsigned short pb_vlan0_b; //port binding vlan ID
+#ifdef CONFIG_RTK_L34_ENABLE
+	unsigned short rg_vlan0_entryID; //port binding vlan ID
+#endif
+	unsigned short pb_vlan1_a; //port binding vlan ID
+	unsigned short pb_vlan1_b; //port binding vlan ID
+#ifdef CONFIG_RTK_L34_ENABLE
+	unsigned short rg_vlan1_entryID; //port binding vlan ID
+#endif
+	unsigned short pb_vlan2_a; //port binding vlan ID
+	unsigned short pb_vlan2_b; //port binding vlan ID
+#ifdef CONFIG_RTK_L34_ENABLE
+	unsigned short rg_vlan2_entryID; //port binding vlan ID
+#endif
+	unsigned short pb_vlan3_a; //port binding vlan ID
+	unsigned short pb_vlan3_b; //port binding vlan ID
+#ifdef CONFIG_RTK_L34_ENABLE
+	unsigned short rg_vlan3_entryID; //port binding vlan ID
+#endif
+} __PACK__ MIB_CE_PORT_BINDING_T, *MIB_CE_PORT_BINDING_Tp;
+
+#ifdef CONFIG_USER_RTK_LBD
+#define MAX_LBD_VLANS 100
+typedef struct lbd_vlan_entry
+{
+	unsigned short vid;
+} __PACK__ MIB_CE_LBD_VLAN_T, *MIB_CE_LBD_VLAN_Tp;
+#endif
+
+#ifdef CONFIG_USER_CWMP_UPNP_DM
+#define UPNPDM_MAX 16
+
+typedef struct upnpdm_cfg_profile_entry
+{
+	unsigned int inst_num;
+	char rule[512+1];
+	char cfg_path[256+1];
+	char provisioning_code[64+1];
+} __PACK__ MIB_CE_UPNPDM_CFG_PROFILE_T, *MIB_CE_UPNPDM_CFG_PROFILE_Tp;
+
+/* Device config tempaltes*/
+typedef struct upnpdm_cfg_temp_ap_entry
+{
+	unsigned int inst_num;
+
+	unsigned char Enable;
+	unsigned char Channel;	// 1~255, 0: auto
+	char SSID[MAX_SSID_LEN];
+	unsigned char BeaconType;	//None, Basic, WPA, 11i
+	unsigned char Standard;	//"a", "b", "g", "b,g"
+	unsigned char WEPKeyIndex;
+	unsigned char WEPEncryptionLevel; //"40-bit", "104-bit"
+	unsigned char BasicAuthenticationMode; //0: "OpenSystem", 1: "SharedKey", 2: "Both"
+	unsigned char WPAEncryptionModes; 		//"TKIPEncryption", "AESEncryption"
+	unsigned char SSIDHide;
+	unsigned char RFBand; // 0: 2.4G, 1: 5.8G
+	int VLAN;
+	unsigned char ChannelWidth; //0:20, 1: 40, 2: 20+40, 3:80, 4: 160, 5: 80+80 (MHz)
+	unsigned char GuardInterval;	// 0:400ms 1:800ms
+	unsigned int RetryTimeout;
+	unsigned char Powerlevel;	// 1~5
+	//PowerValue
+	unsigned char APModuleEnable;
+	unsigned short WPSKeyWord; // 0 ~128
+	char MaxBitRate[5];
+	unsigned char MACAddressControlEnabled;
+	unsigned char WEPKeyNumberOfEntries;
+	char WEPKey1[128+1];
+	char WEPKey2[128+1];
+	char WEPKey3[128+1];
+	char WEPKey4[128+1];
+	unsigned char PreSharedKeyNumberOfEntries;
+	char WPAPSK[64+1];
+} __PACK__ MIB_CE_UPNPDM_CFG_TEMP_AP_T, *MIB_CE_UPNPDM_CFG_TEMP_AP_Tp;
+
+#define UPNPDM_TIME_WIN_MAX 2
+typedef struct upnpdm_file_profile_entry
+{
+	unsigned int inst_num;
+	char rule[512+1];
+	unsigned char file_type;
+	char url[256+1];
+	char sw_ver[64+1];
+	char hw_ver[64+1];
+	int channel;
+	char username[64+1];
+	char password[64+1];
+	unsigned int tw_inst_num[UPNPDM_TIME_WIN_MAX];
+	unsigned int tw_start[UPNPDM_TIME_WIN_MAX];
+	unsigned int tw_end[UPNPDM_TIME_WIN_MAX];
+	unsigned char tw_mode[UPNPDM_TIME_WIN_MAX];
+	char tw_user_msg[UPNPDM_TIME_WIN_MAX][512+1];
+	int tw_max_retries[UPNPDM_TIME_WIN_MAX];
+} __PACK__ MIB_CE_UPNPDM_FILE_PROFILE_T, *MIB_CE_UPNPDM_FILE_TYPE_Tp;
+#endif	//CONFIG_USER_CWMP_UPNP_DM
+
+#ifdef CONFIG_MULTI_FTPD_ACCOUNT
+typedef struct ftp_account_entry {
+	unsigned int index;
+	char username[MAX_NAME_LEN];
+	char password[MAX_NAME_LEN];
+} __PACK__ MIB_CE_FTP_ACCOUNT_T, *MIB_CE_FTP_ACCOUNT_Tp;
+#endif
+
+typedef struct vsftp_account_entry {
+	unsigned int index;
+	char username[MAX_NAME_LEN];
+	char password[MAX_NAME_LEN];
+} __PACK__ MIB_CE_VSFTP_ACCOUNT_T, *MIB_CE_VSFTP_ACCOUNT_Tp;
+
+#define IN_COMING_IP_MAX_LEN (64)
+typedef struct in_comming_entry {
+	unsigned int index;
+	char remoteIP[IN_COMING_IP_MAX_LEN];
+	unsigned int protocol;
+	unsigned int port;
+	unsigned int interface;
+} __PACK__ MIB_CE_IN_COMMING_T, *MIB_CE_IN_COMMING_Tp;
+
+#define USB_DEV_NAME_MAX_LEN (64)
+#define USB_DEV_MOD_MAX_LEN (64)
+#define USB_DEV_MOUNT_PATH_MAX_LEN (256)
+typedef struct nc_usb_info_entry {
+	unsigned int index;
+	unsigned char devType;
+  unsigned int host_num;
+	unsigned int devId;
+	unsigned char devName[USB_DEV_NAME_MAX_LEN];
+  unsigned char Vendor[USB_DEV_MOD_MAX_LEN];
+	unsigned char Model[USB_DEV_MOD_MAX_LEN];
+	unsigned char write_protectection;
+	unsigned char mountPath[USB_DEV_MOUNT_PATH_MAX_LEN];
+  unsigned char sd_name[USB_DEV_NAME_MAX_LEN];
+  unsigned char usb_format;
+} __PACK__ MIB_USB_INFO_T, *MIB_USB_INFO_Tp;
+//#ifdef CONFIG_MULTI_SMBD_ACCOUNT
+typedef struct smb_account_entry {
+	unsigned int index;
+	char username[MAX_NAME_LEN];
+	char password[MAX_NAME_LEN];
+} __PACK__ MIB_CE_SMB_ACCOUNT_T, *MIB_CE_SMB_ACCOUNT_Tp;
+//#endif
+
+
+#ifdef CTC_DNS_SPEED_LIMIT
+#define DNS_LIMIT_MAX 16
+typedef enum { DNS_LIMIT_ACTION_ALERT=0,DNS_LIMIT_ACTION_DROP=1} DNS_LIMIT_ACTION_T;
+
+typedef struct dns_limit_domain
+{
+	char domain[64];
+	unsigned int limit;
+} __PACK__ MIB_CE_DNS_LIMIT_DOMAIN_T, *MIB_CE_DNS_LIMIT_DOMAIN_Tp;
+
+typedef struct dns_limit_dev_info
+{
+	char domain[64];
+	unsigned char ip_ver;
+	unsigned char ip_addr[IP_ADDR_LEN];
+	unsigned char ip6_addr[IP6_ADDR_LEN];
+	unsigned char mac[MAC_ADDR_LEN];
+	unsigned int record_time;
+} __PACK__ MIB_CE_DNS_LIMIT_DEV_INFO_T, *MIB_CE_DNS_LIMIT_DEV_INFO_Tp;
+#endif
+
+#ifdef CTC_DNS_TUNNEL
+typedef struct dns_tunnel
+{
+	unsigned char server_ip[IP_ADDR_LEN];
+	char domain[64];
+} __PACK__ MIB_CE_DNS_TUNNEL_T, *MIB_CE_DNS_TUNNEL_Tp;
+#endif
+
+#ifdef CONFIG_SUPPORT_AUTO_DIAG
+typedef struct auto_diag_param
+{
+	unsigned char userName[64];
+	unsigned char passWord[64];
+	unsigned int authType;	//0 -AUTO, 1 -PAP, 2 -CHAP, 3 -NONE
+	unsigned int timeList;
+	unsigned int failRetryTimeList;
+} __PACK__ MIB_CE_AUTO_DIAG_PARAM_T, *MIB_CE_AUTO_DIAG_PARAM_Tp;
+
+typedef struct monitor_collector
+{
+	char Para[PARA_NAME_LEN];
+	unsigned short TimeList;	// in minutes
+	unsigned int instNum;	//TR-069 instance number, can be duplicated
+} __PACK__ CWMP_CT_MONITOR_COLLECTOR_T, *CWMP_CT_MONITOR_COLLECTOR_Tp;
+#endif
+
+typedef struct port_bandwidth_entry
+{
+	unsigned int port;
+	unsigned int upRate;
+	unsigned int downRate;
+} __PACK__ MIB_CE_PORT_BANDWIDTH_ENTRY_T, *MIB_CE_PORT_BANDWIDTH_ENTRY_Tp;
+
+
+#define SMT_HGU_FTPACCOUNT_STR_LEN 32
+#if 0
+typedef struct smt_hgu_ftpserver_account_t
+{
+    char tftp_username[SMT_HGU_FTPACCOUNT_STR_LEN];/*ftp username */
+    char tftp_password[SMT_HGU_FTPACCOUNT_STR_LEN]; /*ftp passwd*/
+} __PACK__ MIB_CE_SMART_FTP_ACCOUNT_T, *MIB_CE_SMART_FTP_ACCOUNT_TP;
+
+
+typedef struct smt_hgu_ftpserver
+{
+    unsigned char tftpserver_enbale;/*enable ftpserver*/
+    unsigned char tftpserver_allowAnonymous;
+} __PACK__ MIB_CE_SMART_FTP_SERVER_T, *MIB_CE_SMART_FTP_SERVER_TP;
+#endif
+#define MAX_LANNET_DEV_NAME_LENGTH			32
+#define MAX_LANNET_BRAND_NAME_LENGTH		16
+#define MAX_LANNET_MODEL_NAME_LENGTH		16
+#define MAX_LANNET_OS_NAME_LENGTH			16
+#define MAX_TIME_LENGTH 32
+typedef struct smt_hgu_lanhost
+{
+    unsigned char instnum;
+    unsigned char mac[MAC_ADDR_LEN];
+	char		  isStaticDevName;
+    char		  devName[MAX_LANNET_DEV_NAME_LENGTH];
+    unsigned char devType;
+    unsigned int  ip; /* network order */
+    unsigned char connectionType;
+	unsigned char port;
+	char		  brand[MAX_LANNET_BRAND_NAME_LENGTH];
+    char		  model[MAX_LANNET_MODEL_NAME_LENGTH];
+	char		  os[MAX_LANNET_OS_NAME_LENGTH];
+	unsigned int  onLineTime;
+	unsigned int  upRate;
+	unsigned int  downRate;
+	unsigned int  maxUsBandwidth;
+	unsigned int  maxDsBandwidth;
+	unsigned char internetAccessRight;
+	unsigned char storageAccessRight;
+    unsigned char ControlStatus;
+    unsigned char Active;
+	unsigned char PowerLevel;
+    unsigned char DeviceOnlineNofication;
+    unsigned char LatestActiveTime[MAX_TIME_LENGTH];
+    unsigned char LatestInactiveTime[MAX_TIME_LENGTH];
+} __PACK__ MIB_CE_SMART_LAN_HOST_T, *MIB_CE_SMART_LAN_HOST_TP;
+
+#define MAX_MGT_URL_LENGTH			256
+#define MAX_VERSION_LENGTH      32
+typedef struct smt_hgu_internetgateway
+{
+		unsigned char MgtURL[MAX_MGT_URL_LENGTH];
+		unsigned int Port;
+		unsigned int Heartbeat;
+		unsigned int Ability;
+		unsigned int LocatePort;
+		unsigned char Version[MAX_VERSION_LENGTH];
+		unsigned char Appmodel[MAX_VERSION_LENGTH];
+		unsigned char SSN[MAX_VERSION_LENGTH];
+} __PACK__ MIB_CE_SMART_INTERNET_GATEWAY_T, *MIB_CE_SMART_INTERNET_GATEWAY_TP;
+
+
+#ifdef CONFIG_USER_BEHAVIOR_ANALYSIS
+#define SNORT_PATH "/tmp/dpi"
+
+#define BA_CLASS_PROTOCOL_NONE		0
+#define BA_CLASS_PROTOCOL_FTP		1
+#define BA_CLASS_PROTOCOL_HTTP		2
+#define BA_CLASS_PROTOCOL_TELNET	3
+#define BA_CLASS_PROTOCOL_UDP		4
+#define BA_CLASS_PROTOCOL_TCP		5
+
+typedef struct ba_class_s
+{
+	unsigned char enable;
+	char class_interface[256];
+	unsigned char protocol;
+	unsigned char protocol_exclude;
+	char search_engines[256];
+	char particular_key[256];
+	unsigned char dip[IP_ADDR_LEN];
+	unsigned char dip_mask[IP_ADDR_LEN];
+	unsigned char dip_exclude;
+	unsigned char sip[IP_ADDR_LEN];
+	unsigned char sip_mask[IP_ADDR_LEN];
+	unsigned char sip_exclude;
+	int dport;
+	int dport_range;
+	unsigned char dport_exclude;
+	int sport;
+	int sport_range;
+	unsigned char sport_exclude;
+	char other_express[256];
+	unsigned int app_inst_num;
+	unsigned int flow_inst_num;
+	unsigned int inst_num;
+} __PACK__ MIB_CTC_BA_CLASS_T, *MIB_CTC_BA_CLASS_Tp;
+
+typedef struct ba_app_flow_s
+{
+	unsigned char enable;
+	char name[256];
+	unsigned int inst_num;
+} __PACK__ MIB_CTC_BA_APP_T, *MIB_CTC_BA_APP_Tp, MIB_CTC_BA_FLOW_T, *MIB_CTC_BA_FLOW_Tp;
+
+#define NETWORK_PERFORMANCE_DNS_QUERY 0
+#define NETWORK_PERFORMANCE_HTTP_GET 1
+#define NETWORK_PERFORMANCE_TCP_CONNECTION 2
+
+typedef struct network_performance_entry
+{
+	unsigned char performance_type;
+	unsigned char enable;
+	unsigned int interval;
+	unsigned char interface[256+1];
+	unsigned char server[256+1];
+	unsigned int port;
+	unsigned char diag_name[256+1];
+	unsigned int NumberOfRepetitions;
+	unsigned int TimeThreshold;
+} __PACK__ MIB_NETWORK_PERFORMANCE_T, *MIB_NETWORK_PERFORMANCE_Tp;
+#endif
+
+#ifdef _PRMT_X_WLANFORISP_
+typedef enum { AUTHMODE_8021X_EAP = 0 } E_WLANFORISP_AUTHMODE_T;
+typedef struct wlanforisp_entry
+{
+	unsigned int SSID_IDX;
+	unsigned char EnableUserId;
+	unsigned char SSID[MAX_SSID_LEN];
+	unsigned char AuthenticationMode;
+	unsigned char RadiusServer[IP_ADDR_LEN];
+	unsigned char RadiusKey[64];
+	unsigned char NasID[64];
+	unsigned char RadiusAccountEnable;
+	unsigned char EnableCalledId;
+	unsigned int inst_num;
+} __PACK__ MIB_WLANFORISP_T, *MIB_WLANFORISP_Tp;
+#endif
+
+#define STBBIND_MAC_MAX 4
+typedef enum { STBBIND_MAC_UNUSED = 0, STBBIND_MAC_NOT_SAVE = 1, STBBIND_MAC_SAVE = 2 } STBBIND_MAC_RECORD_T;
+typedef struct stbbind_mac_entry
+{
+	unsigned char record;
+	unsigned char order;
+	unsigned char mac[20];
+} __PACK__ MIB_STBBIND_MAC_T, *MIB_STBBIND_MAC_Tp;
+
+#ifdef CONFIG_USER_RTK_OMD
+typedef struct cpumem_info_entry
+{
+	unsigned char servicename[64];
+	unsigned char processname[64];
+	unsigned int cpuperc;
+	unsigned int memthr;
+	unsigned int inst_num;
+} __PACK__ MIB_CPUMEM_INFO_ENTRY_T, *MIB_CPUMEM_INFO_ENTRY_Tp;
+
+typedef struct process_excep_entry
+{
+	unsigned char servicename[64];
+	unsigned char processname[64];
+	unsigned int inst_num;
+} __PACK__ MIB_PROCESS_EXCEP_ENTRY_T, *MIB_PROCESS_EXCEP_ENTRY_Tp;
+#endif
+
+#ifdef WLAN_VSIE_SERVICE
+#define MAX_BEACON_TXVSIE	32
+typedef struct beacon_txvsie_entry
+{
+	unsigned int inst_num;
+	unsigned char ServiceName[64];
+	unsigned char status;
+	unsigned char ssidIndex;
+	unsigned int Duration;
+	unsigned char IEData[255];
+	unsigned int LenofIEData;
+} __PACK__ MIB_BEACON_TXVSIE_ENTRY_T, *MIB_BEACON_TXVSIE_ENTRY_Tp;
+#define MAX_PROBE_RXVSIE	16
+typedef struct probe_rxvsie_entry
+{
+	unsigned int inst_num;
+	unsigned char ServiceName[64];
+	unsigned char probeband;
+	unsigned char oui[3];
+} __PACK__ MIB_PROBE_RXVSIE_ENTRY_T, *MIB_PROBE_RXVSIE_ENTRY_Tp;
+#endif
+
+// L2Filter one entry for each LAN interfaces
+#ifdef WLAN_SUPPORT
+#define L2FILTER_ENTRY_NUM (CONFIG_LAN_PORT_NUM + NUM_WLAN_INTERFACE * (1 + WLAN_MBSSID_NUM))
+#else
+#define L2FILTER_ENTRY_NUM (CONFIG_LAN_PORT_NUM)
+#endif
+#define L2FILTER_ETH_NONE 0x0
+#define L2FILTER_ETH_IPV4OE 0x1
+#define L2FILTER_ETH_PPPOE 0x2
+#define L2FILTER_ETH_ARP 0x4
+#define L2FILTER_ETH_IPV6OE 0x8
+#define L2FILTER_ETH_END 0x10
+typedef struct l2filter_entry
+{
+	unsigned char eth_type; //bit0~3: IPv4oE, PPPoE, ARP, IPv6oE
+	unsigned char src_mac[MAC_ADDR_LEN];
+	unsigned char dst_mac[MAC_ADDR_LEN];
+} __PACK__ MIB_CE_L2FILTER_T, *MIB_CE_L2FILTER_Tp;
+
+#ifdef _PRMT_X_CMCC_LANINTERFACES_
+typedef struct elan_conf_entry
+{
+	unsigned int mac_limit;
+} __PACK__ MIB_CE_ELAN_CONF_T, *MIB_CE_ELAN_CONF_Tp;
+#endif
+
+
+#ifdef CONFIG_CMCC_FORWARD_RULE_SUPPORT
+#define CONFIG_CMCC_FORWARD_RULE_NUM 20
+typedef struct forward_rule_entry {
+	char remoteAddress[128];  //remote address could be ipv4 or ipv6
+	char remotePort[13]; //format?Gx-y/!x/x , if value is 0, it means no limits
+	unsigned char protocol; //0: tcp 1:udp
+	char hostMAC[18]; //if value is "", it means no limits
+	char forwardToIP[46];    //destination ip address, could be ipv4 or ipv6, if value is empty, forward by kernel stack
+	int forwardToPort;					   //destination port, if value is 0, drop the packet
+	int ruleIdx;
+	int aclIdx;
+	int aclIdx1;
+	char realremoteAddress[128];  //remote address could be ipv4 or ipv6
+} __PACK__ MIB_CMCC_FORWARD_RULE_T, *MIB_CMCC_FORWARD_RULE_Tp;
+#endif //CONFIG_CMCC_FORWARD_RULE_SUPPORT
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#ifdef CONFIG_USER_CUMANAGEDEAMON
+typedef struct plugin_api_list
+{
+	char plugin_name[128];
+	char APIName[64];
+	int right;
+}__PACK__ MIB_PLUGIN_API_LIST_T, *MIB_PLUGIN_API_LIST_Tp;
+#endif
+
+typedef struct osgi_plugin_info_entry
+{
+	char plugin_name[128];
+	int bundle_id;
+	char dl_url[256];
+	char version[32];
+	int size;
+	char os[32];
+	int state;
+	int install_percent;
+	char symbolic_name[128];
+	unsigned char auto_start;
+	char path[256];
+	int install_state;
+} __PACK__ MIB_CMCC_OSGI_PLUGIN_T, *MIB_CMCC_OSGI_PLUGIN_Tp;
+#endif
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define MAX_MIRROR_RULE_NUM 20
+typedef struct mirror_rule_entry {
+	char remote_ip[128];
+	char real_remote_ip[128];
+	unsigned short remote_port_start;
+	unsigned short remote_port_end;
+	unsigned char direction;
+	unsigned char protocol;
+	unsigned char hostmac[MAC_ADDR_LEN];
+	unsigned char mirror_to_ip[IP_ADDR_LEN];
+	unsigned short mirror_to_port;
+	unsigned short entry_index;
+	unsigned char assign_dmac[MAC_ADDR_LEN]; //rg set acl-filter action udp_encap assign_dmac
+	unsigned char assign_sip[IP_ADDR_LEN];
+} __PACK__ MIB_CE_MIRROR_RULE_T, *MIB_CE_MIRROR_RULE_Tp;
+#endif
+
+#ifdef CONFIG_CMCC_TRAFFIC_PROCESS_RULE_SUPPORT
+#define CONFIG_CMCC_TRAFFIC_PROCESS_RULE_NUM 32
+typedef struct traffic_process_rule_entry {
+	char remoteAddress[128];  //remote address could be ipv4 or ipv6
+	char remotePort[13]; //format?x-y/!x/x , if value is 0, it means no limits
+	char direction[8]; //0: tcp 1:udp
+	char hostMAC[18]; //if value is "", it means no limits
+	char methodList[64]; 
+	char statuscodeList[128];					   //destination port, if value is 0, drop the packet
+	char headerList[64];
+	char bundlename[128];
+	int aclIdx_0;
+	int aclIdx_1;
+	char realremoteAddress[128];  //remote address could be ipv4 or ipv6
+	int ruleIdx;
+} __PACK__ MIB_CMCC_TRAFFIC_PROCESS_RULE_T, *MIB_CMCC_TRAFFIC_PROCESS_RULE_Tp;
+#endif //CONFIG_CMCC_TRAFFIC_PROCESS_RULE_SUPPORT
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define CONFIG_CMCC_TRAFFICMONITOR_RULE_NUM 256
+typedef struct trafficMonitor_rule_entry {
+	int bundleID;
+	char plugin_name[128];
+	char monitor_ip_url[128]; 		//Domain name or ip address
+	char real_monitor_ip[128]; 	//ip address
+	int netmask;
+	int naptIdx;
+} __PACK__ MIB_CMCC_TRAFFICMONITOR_RULE_T, *MIB_CMCC_TRAFFICMONITOR_RULE_Tp;
+#endif
+
+
+#ifdef CONFIG_CMCC_MULTICAST_CROSS_VLAN_SUPPORT
+#define MULTICAST_CROSS_VLAN_NUM 1
+typedef struct multicast_cross_vlan_entry {
+	unsigned short cross_vlan0; //corss vlan of lan port 0
+	unsigned short cross_vlan1; //corss vlan of lan port 1
+	unsigned short cross_vlan2; //corss vlan of lan port 2
+	unsigned short cross_vlan3; //corss vlan of lan port 3
+} __PACK__ MIB_MULTICAST_CROSS_VLAN_T, *MIB_MULTICAST_CROSS_VLAN_Tp;
+#endif
+
+#if (defined(CONFIG_CMCC) || defined(CONFIG_CU)) && defined(CONFIG_IPV6)
+#define CONFIG_IPV6_BINDING_NUM 32
+typedef struct ipv6_binding_entry{
+	unsigned char ipv6_addr[MAX_V6_IP_LEN+8];	//with prefix
+	unsigned char binding_mode;
+	unsigned int binding_port;
+	unsigned int binding_vlan;	
+} __PACK__ MIB_IPV6_BINDING_T, *MIB_IPV6_BINDING_Tp;
+#endif
+
+#ifdef _PRMT_X_CMCC_WLANFORGUEST_
+#if defined(WLAN_DUALBAND_CONCURRENT)
+#define CONFIG_WLAN_FORGUEST_NUM 2
+#define MAX_WLAN_GUEST 2
+#else
+#define CONFIG_WLAN_FORGUEST_NUM 1
+#define MAX_WLAN_GUEST 1
+#endif
+typedef struct wlan_forguest_entry
+{
+	unsigned int wlanguestinst;
+	unsigned int ssididx;
+	unsigned int duration;
+	unsigned char portisolation;
+} __PACK__ MIB_CE_WLANGUEST_T, *MIB_CE_WLANGUEST_Tp;
+#endif
+
+#ifdef _PRMT_X_CMCC_WLANSHARE_
+#define MAX_WLAN_SHARE 1
+typedef struct wlan_share_entry
+{
+	unsigned char ssid_idx;
+	unsigned char port_iso;
+	unsigned char sta_iso;
+	unsigned char userid_enable;
+	unsigned char userid[40];
+	unsigned int inst_num;
+} __PACK__ MIB_CE_WLAN_SHARE_T, *MIB_CE_WLAN_SHARE_Tp;
+#endif
+
+#ifdef _PRMT_X_CT_COM_DATA_SPEED_LIMIT_
+#define DATA_SPEED_LIMIT_SM_ID_START 8	// Share meter start id for data speed limit function
+#define MAX_DATA_SPEED_LIMIT_ENTRY	4	//UP + DOWN used total 16 share meter entries
+#ifdef CONFIG_USER_LAN_BANDWIDTH_CONTROL
+#define MAX_BANDWIDTH_CONTROL_SM_ID_NUM	11
+#define LAN_BANDWIDTH_CONTROL_DS_SM_ID_START DATA_SPEED_LIMIT_SM_ID_START
+#define LAN_BANDWIDTH_CONTROL_DS_SM_ID_END (LAN_BANDWIDTH_CONTROL_DS_SM_ID_START+MAX_BANDWIDTH_CONTROL_SM_ID_NUM-1)
+#define LAN_BANDWIDTH_CONTROL_US_SM_ID_START (LAN_BANDWIDTH_CONTROL_DS_SM_ID_END+1)
+#define LAN_BANDWIDTH_CONTROL_US_SM_ID_END (LAN_BANDWIDTH_CONTROL_US_SM_ID_START+MAX_BANDWIDTH_CONTROL_SM_ID_NUM-1)
+#endif
+enum
+{
+	DATA_SPEED_LIMIT_MODE_DISABLE = 0,
+	DATA_SPEED_LIMIT_MODE_IF,
+	DATA_SPEED_LIMIT_MODE_VLAN,
+	DATA_SPEED_LIMIT_MODE_IP,
+	DATA_SPEED_LIMIT_MODE_END,
+};
+
+typedef struct data_speed_limit_if
+{
+	unsigned char if_id;
+	unsigned int speed_unit;	//256kbps per unit;
+} __PACK__ MIB_CE_DATA_SPEED_LIMIT_IF_T, *MIB_CE_DATA_SPEED_LIMIT_IF_Tp;
+
+typedef struct data_speed_limit_vlan
+{
+	int vlan;	// -1: untagged
+	unsigned int speed_unit;	//256kbps per unit;
+} __PACK__ MIB_CE_DATA_SPEED_LIMIT_VLAN_T, *MIB_CE_DATA_SPEED_LIMIT_VLAN_Tp;
+
+typedef struct data_speed_limit_ip
+{
+	unsigned char ip_ver;
+	char ip_start[MAX_V6_IP_LEN];	//as string
+	char ip_end[MAX_V6_IP_LEN];	//as string
+	unsigned int speed_unit;	//256kbps per unit;
+} __PACK__ MIB_CE_DATA_SPEED_LIMIT_IP_T, *MIB_CE_DATA_SPEED_LIMIT_IP_Tp;
+#else
+#ifdef CONFIG_USER_LAN_BANDWIDTH_CONTROL
+#define MAX_BANDWIDTH_CONTROL_SM_ID_NUM	11
+#define LAN_BANDWIDTH_CONTROL_DS_SM_ID_START 8
+#define LAN_BANDWIDTH_CONTROL_DS_SM_ID_END (LAN_BANDWIDTH_CONTROL_DS_SM_ID_START+MAX_BANDWIDTH_CONTROL_SM_ID_NUM-1)
+#define LAN_BANDWIDTH_CONTROL_US_SM_ID_START (LAN_BANDWIDTH_CONTROL_DS_SM_ID_END+1)
+#define LAN_BANDWIDTH_CONTROL_US_SM_ID_END (LAN_BANDWIDTH_CONTROL_US_SM_ID_START+MAX_BANDWIDTH_CONTROL_SM_ID_NUM-1)
+#endif
+#endif
+
+#define STORM_CONTROL_SM_ID_NUM 27 // Share meter id for Storm Control
+#define STORM_CONTROL_BCAST_SM_ID_NUM 26 // Share meter id for Storm Control
+
+#ifdef _PRMT_X_CMCC_SECURITY_
+typedef struct parentalctrl_mac_entry
+{
+	unsigned char MACAddress[MAC_ADDR_LEN];
+	char Description[64];
+	unsigned int TemplateInst; // mapping to parentalctrl_templates_entry.inst_num
+	unsigned int inst_num;
+} __PACK__ MIB_PARENTALCTRL_MAC_T, *MIB_PARENTALCTRL_MAC_Tp;
+
+typedef struct parentalctrl_templates_entry
+{
+	char Name[32];
+	unsigned char UrlFilterPolicy; //FALSE:black list, TRUE:white list
+	unsigned char UrlFilterRight; // URL Filter,  FALSE:disable, TRUE:enable
+	unsigned char DurationPolicy; //FALSE:black list, TRUE:white list
+	unsigned char DurationRight; // Duration Filter,  FALSE:disable, TRUE:enable
+	unsigned int inst_num;
+} __PACK__ MIB_PARENTALCTRL_TEMPLATES_T, *MIB_PARENTALCTRL_TEMPLATES_Tp;
+
+typedef struct parentalctrl_templates_duration_entry
+{
+	unsigned char StartTime_hr;
+	unsigned char StartTime_min;
+	unsigned char EndTime_hr;
+	unsigned char EndTime_min;
+	unsigned int RepeatDay;
+	unsigned int TemplateInst; // mapping to parentalctrl_templates_entry.inst_num
+	unsigned int inst_num;
+} __PACK__ MIB_PARENTALCTRL_TEMPLATES_DURATION_T, *MIB_PARENTALCTRL_TEMPLATES_DURATION_Tp;
+
+typedef struct parentalctrl_templates_urlfilter_entry
+{
+	char UrlAddress[64];
+	unsigned int TemplateInst; // mapping to parentalctrl_templates_entry.inst_num
+	unsigned int inst_num;
+} __PACK__ MIB_PARENTALCTRL_TEMPLATES_URLFILTER_T, *MIB_PARENTALCTRL_TEMPLATES_URLFILTER_Tp;
+#endif
+
+#ifdef _PRMT_C_CU_USERACCOUNT_
+#define URL_STR_LEN 128
+typedef struct user_account
+{
+	unsigned int serviceEnable;
+	unsigned int numOfSubuser;
+	char name[32];
+	char description[32];
+	unsigned int timeEnable;
+	unsigned int portalEnable;
+	char portalPC[URL_STR_LEN];
+	char portalIPTV[URL_STR_LEN];
+	char portalPhone[URL_STR_LEN];
+	unsigned int ifindex;
+	unsigned int instNum;
+	unsigned int urlMode;
+}__PACK__ USER_ACCOUNT_T;
+
+typedef struct user_account_time
+{
+	unsigned int timedayflag;
+	unsigned int timestartHr;
+	unsigned int timestartMin;
+	unsigned int timeendHr;
+	unsigned int timeendMin;
+	unsigned int ifindex;
+}__PACK__ USER_ACCOUNT_TIME_T;
+
+typedef struct user_account_mac
+{
+	unsigned char macaddr[6];
+	unsigned int ifindex;
+	unsigned int instNum;
+}__PACK__ USER_ACCOUNT_MAC_T;
+
+typedef struct user_account_ip
+{
+	unsigned int ipaddr;
+	unsigned int ifindex;
+	unsigned int instNum;
+}__PACK__ USER_ACCOUNT_IP_T;
+
+typedef struct user_account_url
+{
+	char filter[URL_STR_LEN];
+	unsigned int ifindex;
+	unsigned int instNum;
+}__PACK__ USER_ACCOUNT_URL_T;
+#endif
+
+#ifdef _PRMT_C_CU_FTPSERVICE_
+#define FTP_READONLY 0
+#define FTP_READWRITE 1
+#define FTP_ADMIN 2
+#define FTP_STR_LEN 256
+typedef struct ftp_server_t
+{
+	char username[FTP_STR_LEN];
+	char password[FTP_STR_LEN];
+	char path[FTP_STR_LEN];
+	unsigned int port;
+	unsigned int instNum;
+	unsigned char enable;
+	unsigned char userRight;
+} __PACK__ FTP_SERVER_T, *FTP_SERVER_Tp;
+
+typedef struct ftp_client_t
+{
+	char username[FTP_STR_LEN];
+	char password[FTP_STR_LEN];
+	char serverUrl[FTP_STR_LEN];
+	char fileName[FTP_STR_LEN];
+	char savePath[FTP_STR_LEN];
+	unsigned int port;
+	int status;
+	unsigned int instNum;
+	unsigned char enable;	
+} __PACK__ FTP_CLIENT_T, *FTP_CLIENT_Tp;
+#endif
+
+/* ------------------------------------------------------------
+ * Flash File System Utility functions
+ * ------------------------------------------------------------ */
+int __mib_flash_part_write(void *buf, int offset, int len, char *part_name);
+int __mib_flash_read(void *buf, int offset, int len);
+int __mib_flash_write(void *buf, int offset, int len);
+int __mib_file_write(CONFIG_DATA_T data_type, void *ptr, int len);
+int __mib_file_read(CONFIG_DATA_T data_type, void *ptr, int len);
+#ifdef CONFIG_MTD_NAND
+int __mib_nand_flash_read(void *buf, int offset, int len, char *part_name);
+int __mib_nand_flash_write(void *buf, int offset, int len, char *part_name);
+#endif
+
+/* ------------------------------------------------------------
+ * MIB Chain Record Utility functions
+ * ------------------------------------------------------------ */
+int __mib_chain_mib2tbl_id(int id);
+void __mib_chain_print(int id);
+unsigned int __mib_chain_total(int id);
+void __mib_chain_clear(int id);
+int __mib_chain_add(int id, unsigned char* ptr);
+int __mib_chain_delete(int id, unsigned int recordNum);
+unsigned char* __mib_chain_get(int id, unsigned int recordNum);
+unsigned int __mib_chain_all_table_size(CONFIG_DATA_T data_type);
+void __mib_chain_all_table_clear(CONFIG_DATA_T data_type);
+
+/* ------------------------------------------------------------
+ * MIB Table Utility functions
+ * ------------------------------------------------------------ */
+unsigned char * __mib_get_mib_tbl(CONFIG_DATA_T data_type);
+PARAM_HEADER_Tp __mib_get_mib_header(CONFIG_DATA_T data_type);
+void __mib_init_mib_header(void);
+unsigned int __mib_content_min_size(CONFIG_DATA_T data_type);
+unsigned int __mib_content_max_size(CONFIG_DATA_T data_type);
+int __mib_header_read(CONFIG_DATA_T data_type, PARAM_HEADER_Tp pHeader);
+int __mib_header_check(CONFIG_DATA_T data_type, PARAM_HEADER_Tp pHeader);
+int __mib_content_decod_check(CONFIG_DATA_T data_type, PARAM_HEADER_Tp pHeader, unsigned char* ptr);
+void __mib_content_encod_check(CONFIG_DATA_T data_type, PARAM_HEADER_Tp pHeader, unsigned char* ptr);
+int __mib_chain_record_content_decod(unsigned char* ptr, unsigned int len);
+int __mib_chain_record_content_encod(CONFIG_DATA_T data_type, unsigned char* ptr, unsigned int len);
+int __mib_content_read(CONFIG_DATA_T data_type, CONFIG_MIB_T flag);
+unsigned int __mib_content_size(CONFIG_DATA_T data_type);
+int __mib_content_write_to_raw(CONFIG_DATA_T data_type, unsigned char *buf, unsigned int len);
+int __mib_content_write(CONFIG_DATA_T data_type);
+int __mib_content_read_to_raw(CONFIG_DATA_T data_type, unsigned char* ptr, int len);
+int __mib_content_write_from_raw(unsigned char* ptr, int len);
+
+/* ------------------------------------------------------------
+ * MIB API
+ * ------------------------------------------------------------ */
+int _mib_update_from_raw(unsigned char* ptr, int len); /* Write the specified setting to flash, this function will also check the length and checksum */
+int _mib_read_to_raw(CONFIG_DATA_T data_type, unsigned char* ptr, int len); /* Load flash setting to the specified pointer */
+int _mib_update(CONFIG_DATA_T data_type); /* Update RAM setting to flash */
+int _mib_read_header(CONFIG_DATA_T data_type, PARAM_HEADER_Tp pHeader); /* Load flash header */
+int _mib_load(CONFIG_DATA_T data_type); /* Load flash setting to RAM */
+int mib_load_table(CONFIG_DATA_T data_type); /* Load flash setting of mib_table to RAM */
+int mib_load_chain(CONFIG_DATA_T data_type); /* Load flash setting of mib_chain to RAM */
+int mib_reset(CONFIG_DATA_T data_type); /* Reset to default */
+
+int mib_init(void); /* Initialize */
+int _mib_get(int id, void *value); /* get mib value */
+int _mib_set(int id, void *value); /* set mib value */
+int _mib_swap(int id, int id1); /* swap mib value */
+#ifdef INCLUDE_DEFAULT_VALUE
+int mib_init_mib_with_program_default(CONFIG_DATA_T data_type, int action);
+int _mib_getDef(int id, char *buffer);
+#endif
+
+unsigned int _mib_chain_total(int id); /* get chain record size */
+void _mib_chain_clear(int id); /* clear chain record */
+int _mib_chain_add(int id, const void *ptr); /* add chain record */
+int _mib_chain_delete(int id, unsigned int recordNum); /* delete the specified chain record */
+unsigned char* _mib_chain_get(int id, unsigned int recordNum); /* get the specified chain record */
+unsigned char* __mib_chain_get_backup_record(int id, unsigned int recordNum, unsigned char* ptr, unsigned int len);
+// for message logging
+int _mib_chain_update(int id, unsigned char* ptr, unsigned int recordNum); /* log updating the specified chain record */
+
+int get_mtd_fd(const char *name);
+#ifdef WLAN_SUPPORT
+//1/20/06' hrchen, for WLAN enable/disable check
+int wlan_is_up(void);
+
+#endif
+#define ACC_TELNET_PORT 61025
+#define ACC_HTTP_PORT 61080
+#define ACC_FTP_PORT 61021
+
+#ifdef CONFIG_USER_RTK_RECOVER_SETTING
+#define OLD_SETTING_FILE "/var/config/oldsetting.xml"
+#define FLASH_CHECK_FAIL "/var/flash_check_fail"
+#endif
+
+#ifdef E8B_NEW_DIAGNOSE
+#define INFORM_STATUS_FILE "/var/inform_status"
+typedef enum { NO_INFORM = 0, NO_RESPONSE = 1, INFORM_BREAK = 2, INFORM_SUCCESS = 3, INFORM_AUTH_FAIL = 4, INFORMING = 5 } INFORM_STATUS;
+
+#if defined(CONFIG_CMCC) || defined(CONFIG_CU)
+#define E8B_START_STR		"1网关正在启动"
+#define NO_CWMP_CONNECTION		"2无远程管理WAN连接"
+#define CWMP_CONNECTION_DISABLE		"3远程管理WAN连接未生效"
+#define CWMP_NO_DNS		"4无管理通道DNS信息"
+#define CWMP_NO_ACSSETTING		"5无ACS配置参数"
+#define ACSURL_GET_FAIL		"6ACS域名解析失败"
+#else
+#define E8B_START_STR		"家庭网关正在启动"
+#define NO_CWMP_CONNECTION	"无远程管理 WAN 连接"
+#define CWMP_CONNECTION_DISABLE	"远程管理 WAN 连接未生效"
+#define CWMP_NO_DNS		"无管理通道 DNS 信息"
+#define CWMP_NO_ACSSETTING	"无 ACS 配置参数"
+#define ACSURL_GET_FAIL		"ACS 域名解析失败"
+#endif
+
+#define CONNREQ_STATUS_FILE "/var/connreq_status"
+typedef enum { NO_REQUEST = 0, REQUEST_BREAK = 1, REQUEST_SUCCESS = 2 } REQUEST_STATUS;
+
+typedef enum { NO_SET = 99, NOW_SETTING = 0, SET_SUCCESS = 1, SET_FAULT = 2 } REMOTE_SET_STATUS;
+#define NEW_SETTING "/var/newsetting"
+#define PVC_FILE "/var/pvc_file"
+#define SSID_FILE "/var/ssid_file"
+#define USERLIMIT_FILE "/var/userlimit_file"
+#define QOS_FILE "/var/qos_file"
+typedef struct pvc_status_entry {
+	int vpi;
+	int vci;
+	char action[10];
+	char servertype[32];
+	char wantype[10];
+} __PACK__ pvc_status_entry;
+
+#define REBOOT_DELAY_FILE "/var/rebootdelay"
+#define REMOTE_SETSAVE_FILE "/var/config/remote_save"
+#endif
+
+int flash_read(void *buf, int offset, int len); /* raw flash read, without protection */
+int flash_write(void *buf, int offset, int len); /* raw flash write, without protection */
+
+#ifdef CONFIG_USER_CUSPEEDTEST
+enum
+{
+	eSpeedTest_None=0,
+	eSpeedTest_Requested,
+	eSpeedTest_Completed,
+
+	eSpeedTest_STAT_PPPOE_DIALING,
+	eSpeedTest_STAT_SERVER_CONNECTING,
+	eSpeedTest_STAT_SERVER_CONNECTED,
+	eSpeedTest_STAT_SPEED_TESTING,
+	eSpeedTest_STAT_UPLOAD_TEST_RESULT,
+	eSpeedTest_STAT_TEST_FINISHED,
+
+	eSpeedTest_End /*last one*/
+};
+
+enum
+{
+	edownloadMode=0,
+	eserverMode,
+
+	eModeEnd
+};
+
+enum
+{
+	esource_RMS=4,
+	esource_APP,
+	esource_PLATFORM,
+
+	esourceEnd
+};
+
+#define MAX_SAMPLED 15
+
+struct CU_SpeedTest_Diagnostics
+{
+	int		DiagnosticsState;
+	int 		testMode;
+	char 	*pdownloadURL;
+	char 	*ptestURL;
+	char		*preportURL;
+	unsigned int	status;
+	unsigned 	int 	Cspeed;
+	unsigned int	Aspeed;
+	unsigned int	Bspeed;
+	unsigned int	maxspeed;
+	struct timeval		starttime;
+	struct timeval		endtime;
+	unsigned long	Totalsize;
+	unsigned long 	backgroundsize;
+	unsigned int 	Failcode;
+	char 	*Eupppoename;
+	char		*Eupassword;
+	char		*pInterface;
+	char		IfName[32];
+	char  	*wanip;
+	char		*pppoename;
+
+	int		http_pid;
+	char 	*prealURL;
+	int 		source;
+	char *identify;
+
+#ifdef CONFIG_E8B
+	unsigned char max_sampled;	/* 0: do not sample */
+	unsigned long wan_rx_bytes_start;
+	unsigned long wan_tx_bytes_start;
+	unsigned long *SampledValues;
+	unsigned long *SampledTotalValues;
+	unsigned int TestBytesSent;
+#endif
+};
+#endif
+
+#endif // INCLUDE_MIB_H
+

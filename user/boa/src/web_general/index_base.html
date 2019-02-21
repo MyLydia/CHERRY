@@ -1,0 +1,117 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>BroadBand Device Webserver</title>
+ <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/> 
+ <link rel="stylesheet" href="admin/style.css">
+ <link rel="stylesheet" href="admin/reset.css" />
+ <link rel="stylesheet" href="admin/base.css" />
+ <link href="favicon.ico" type="image/x-icon" rel="shortcut icon" />
+    <script src="admin/jquip_sizzle.js" type="text/javascript" ></script>
+    <script src="admin/jquip.js" type="text/javascript" ></script>
+    <script src="admin/juicer.js" type="text/javascript" ></script>
+    <script src="admin/ui.js" type="text/javascript" ></script>
+<script>
+document.write("<s"+"cript type='text/javascript' src='adminMenu.js?v="+Math.random()+"'></scr"+"ipt>");
+</script>
+
+    <script type="text/javascript" src="admin/init.js"></script>
+    <script id="nav-tmpl" type="text/template">
+        {@each items as item}
+            <li><a href="javascript:void(0)" rel="${item.sub}" class="">${item.name}</a><span></span></li>
+        {@/each}
+    </script>
+    <script id="side-tmpl" type="text/x-template">
+        {@each items as item}
+            <li class="{@if item.collapsed}collapsed{@/if}">
+                <h3><a href="#">${item.name}</a></h3>
+                <ul>
+                    {@each item.items as it}
+                        <li><a target="contentIframe" href="${it.href}" class="">${it.name}</a></li>
+                    {@/each}
+                </ul>
+            </li>
+        {@/each}
+    </script>
+	<script>
+      function confirmlogout()
+      {
+       if ( !confirm('do you confirm to logout?') ) {
+	     return false;
+      }
+      else
+	  {
+	    return true;
+	  }
+     }
+function cleanload()
+{
+	top.document.getElementById('shade').style.display = 'none';
+	top.document.getElementById('loadpagediv').style.display = 'none'; 
+}
+     
+    </script>
+</head>
+<body>
+<div id="shade"></div>
+<div id="loadpagediv" class="loading" style="display:none;">
+<p>Proceeding...</p></div>
+<div id="wrapper">
+    <div id="header">
+  <div class="top_bg">
+#ifdef USE_LOGINWEB_OF_SERVER
+    <table>
+		<tr><td style="padding-top:30px;align:right;">
+		<form action=/boaform/admin/formLogout method=POST name="cmlogout">
+          <input type="submit" value="Logout" name="save"  style="color:green;text-decoration:underline;cursor:pointer;border:0px;background:transparent">
+          <input type="hidden" value="/admin/login.asp" name="submit-url">
+        </form>
+		</td></tr>
+	<table>
+    <table>
+		<tr><td style="color:#000;align:right;">Firmware ver.  FIRMVER&nbsp;&nbsp;</td></tr>
+    </table>
+#else
+	<table>
+		<tr><td style="padding-top:40px;color:#000;align:right;">Firmware ver.  FIRMVER&nbsp;&nbsp;</td></tr>
+    </table>
+#endif
+  </div>
+ <div class="nav_side clearfix">
+            <div class="nav_left"></div>
+            <ul id="nav"></ul>
+            <div class="nav_right"></div>
+        </div>
+    </div>
+    <div id="main" class="clearfix">
+  <div id="side_wrapper">
+   <div class="box_wrapper">
+    <h3 class="box_top"></h3>
+    <div class="box_content">
+     <ul id="side"></ul>
+    </div>
+   </div>
+   <div class="box_wrapper none" id="attention">
+    <h3 class="box_top"></h3>
+    <div class="box_content">
+      <div class="page_confirm">
+      <form name="formAttensave" method="POST" action="form2AttenSave.cgi">
+       <div class="page_confirm">
+        <p>Attention Config is modified to make it effective forever!</p>
+        <input type="submit" value="save" class="link_bg" />
+        <input type="hidden" name="submit.htm?index.htm" value="Send"/>
+       </div>
+      </form>
+      </div>
+    </div>
+   </div>
+  </div>
+        <div id="content">
+            <iframe src="#" frameborder="0" name="contentIframe" id="contentIframe" scrolling="no" onload="cleanload()"></iframe>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
+
