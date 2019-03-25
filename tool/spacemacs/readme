@@ -1,0 +1,8 @@
+root@ubuntu:~/.spacemacs.d# git remote -v
+origin	https://github.com/zilongshanren/spacemacs-private.git (fetch)
+origin	https://github.com/zilongshanren/spacemacs-private.git (push)
+
+root@ubuntu:~/.spacemacs.d# git branch -a
+* develop
+  remotes/origin/HEAD -> origin/develop
+  remotes/origin/develop

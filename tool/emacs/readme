@@ -1,0 +1,7 @@
+root@ubuntu:~/.emacs.d# git remote -v
+origin	https://github.com/syl20bnr/spacemacs (fetch)
+origin	https://github.com/syl20bnr/spacemacs (push)
+
+
+root@ubuntu:~/.emacs.d# git branch -a
+* develop
