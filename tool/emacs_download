@@ -1,0 +1,12 @@
+emacs download
+
+sudo add-apt-repository ppa:kelleyk/emacs
+sudo apt-get update
+sudo apt install emacs26
+git clone https://github.com/zilongshanren/spacemacs-private.git -b develop .spacemacs.d
+git clone https://github.com/syl20bnr/spacemacs -b develop .emacs.d
+
+
+
+///////////////////////////////////////////////
+https://www.jianshu.com/p/612cbc1b0d63

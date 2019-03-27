@@ -40,6 +40,10 @@ This function should only modify configuration layer settings."
      graphviz
      (haskell :variables haskell-enable-hindent t
               haskell-completion-backend 'intero)
+     (ycmd :variables ycmd-server-command '("/usr/bin/python" "/work/ycmd/ycmd")
+           ycmd-global-config "/work/ycmd/.ycm_extra_conf.py"
+           ycmd-force-semantic-completion  nil)
+     
      (syntax-checking :variables syntax-checking-enable-by-default nil
                       syntax-checking-enable-tooltips nil)
      (spell-checking :variables spell-checking-enable-by-default nil)
@@ -79,8 +83,8 @@ This function should only modify configuration layer settings."
      html
      (javascript :variables javascript-backend 'nil)
      (typescript :variables
-                typescript-fmt-on-save nil
-                typescript-fmt-tool 'typescript-formatter)
+                 typescript-fmt-on-save nil
+                 typescript-fmt-tool 'typescript-formatter)
      emacs-lisp
      (clojure :variables clojure-enable-fancify-symbols t)
      racket
