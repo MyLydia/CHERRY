@@ -1,0 +1,222 @@
+<?xml version="1.0" ?>
+<cherrytree>
+	<node custom_icon_id="0" foreground="" is_bold="False" name="wireshark" prog_lang="custom-colors" readonly="False" tags="" unique_id="1">
+		<rich_text foreground="#000000000000">抓dhcp报文过滤：
+                            bootp
+
+过滤字节：
+                    1.Edit -&gt; Find Packet 
+                    2.Display filter -&gt; Hex value
+ 
+
+</rich_text>
+	</node>
+	<node custom_icon_id="0" foreground="" is_bold="False" name="学习笔记" prog_lang="custom-colors" readonly="False" tags="" unique_id="15">
+		<rich_text>物理层：
+
+数据链路层：互联设备之间的传送和帧识别
+
+网络层：地址管理和路由判断
+
+传输层：管理两个节点之间的数据传输，负责可靠传输（负责数据被可靠的传输到目的地址）
+
+会话层：通信管理，负责建立和断开通信连接（数据流动的逻辑通路），负责管理会话层以下的分层。
+
+表示层：设备固有数据格式和网络标准数据格式的转化。
+
+应用层：针对特定应用的协议。
+
+
+数据链路层：
+
+网络层：</rich_text>
+	</node>
+	<node custom_icon_id="0" foreground="" is_bold="False" name="GPON" prog_lang="custom-colors" readonly="False" tags="" unique_id="10">
+		<rich_text></rich_text>
+		<node custom_icon_id="0" foreground="" is_bold="False" name="注册" prog_lang="custom-colors" readonly="False" tags="" unique_id="11">
+			<rich_text>
+1.2 通过SN认证ONU
+ZXAN(config)#interface gpon-olt_1/14/1
+ZXAN(config-if)#onu 1 type ZTE-F641 sn 201770500064
+.[Successful]
+ZXAN(config-if)#onu 2 type ZTEG-AUTO sn BLKG79F0AE7C 
+.[Successful]
+ZXAN(config-if)#show gpon onu state gpon-olt_1/14/1</rich_text>
+		</node>
+	</node>
+	<node custom_icon_id="0" foreground="" is_bold="False" name="nfs" prog_lang="custom-colors" readonly="False" tags="" unique_id="7">
+		<rich_text>NFS环境搭建
+说明： What is NFS ?
+
+        NFS就是Network FileSystem的缩写，是由Sun公司发展出来的。其目的是让linux 机器之间彼此分享文档。
+        NFS可以让服务器端共享的目录挂载到本地客户机上，对于本地客户机器来说，
+        远程服务器上的目录就好像自己的一部分。在嵌入式系统开发中主要用于NFS网络根文件系统启动或者网络加载调试应用程序。
+
+第一步： 配置ONU的linux系统支持NFS文件系统
+
+make menuconfig
+File systems &gt; Network File Systems
+&lt;*&gt;   NFS client support 
+
+
+第二步：在ubuntu系统上开启NFS server 端的设定。
+1: 安装NFS_SERVER程序。
+#sudo  apt-get  install nfs-kernel-server
+
+2：启动nfs服务
+/etc/rc.d/init.d/nfs start 或 
+
+/etc/init.d/nfs-kernel-server restart
+
+3: /etc/exports文件的格式如下：
+/home/workshare/nfsdir/bin  *(rw,sync,no_subtree_check)
+
+sudo service portmap start
+
+第三步：在ONU上挂载方法：
+确保ONU和ubuntu是在同一个网段，能够互相ping通
+
+样式：
+mount -t nfs NFS_server_name :exported-directory  mount_point
+
+例子：
+mount -t nfs -o nolock 192.168.1.21:/home/test/nfs_dir     ./nfs_dir
+
+第四步：测试NFS系统
+
+
+在ubuntu系统和ONU系统的NFS目录下，就可以同步代码了，可以删除，创建，编辑文件。
+
+</rich_text>
+		<rich_text link="webs https://blog.csdn.net/iluzhiyong/article/details/52148526">https://blog.csdn.net/iluzhiyong/article/details/52148526</rich_text>
+	</node>
+	<node custom_icon_id="0" foreground="" is_bold="False" name="sdk" prog_lang="custom-colors" readonly="False" tags="" unique_id="3">
+		<rich_text scale="h1" style="italic" weight="heavy">PON_MODE = 1 GPON
+	                       = 2 EPON
+
+DEVICE_TYPE = 1 HGU
+	                            = 0 SFU</rich_text>
+		<rich_text>
+	
+flash命令更改设置的默认语言：
+flash get MULTI_LINGUAL_STATE
+MULTI_LINGUAL_STATE=en
+flash set MULTI_LINGUAL_STATE cn
+
+查看MAC
+flash get EPON_LLID_TBL.MacAddr
+
+flash all |grep -i MacAddr
+
+查看收光
+diag pon get transceiver tx-power
+
+
+查看是否注册
+oamcli get ctc auth 0
+
+
+查看MAC-limit
+diag l2-table get limit-learning port all count</rich_text>
+	</node>
+	<node custom_icon_id="0" foreground="" is_bold="False" name="ubuntu 18.04 添加中文输入法" prog_lang="custom-colors" readonly="False" tags="" unique_id="9">
+		<rich_text link="webs https://jingyan.baidu.com/article/0f5fb0992296e36d8334eada.html">https://jingyan.baidu.com/article/0f5fb0992296e36d8334eada.html</rich_text>
+	</node>
+	<node custom_icon_id="0" foreground="" is_bold="False" name="git" prog_lang="custom-colors" readonly="False" tags="" unique_id="5">
+		<rich_text></rich_text>
+		<node custom_icon_id="0" foreground="" is_bold="False" name="创建新分支" prog_lang="custom-colors" readonly="False" tags="" unique_id="6">
+			<rich_text>git checkout -b acl_loopback
+git add .
+git commit -m &quot;9603C环路检测&quot;
+git push origin acl_loopback:acl_loopback</rich_text>
+		</node>
+		<node custom_icon_id="0" foreground="" is_bold="False" name="取消本地commit" prog_lang="custom-colors" readonly="False" tags="" unique_id="12">
+			<rich_text>$ git commit -m &quot;commit on master&quot;
+$ git reset HEAD~ 
+
+
+$ git reset HEAD^</rich_text>
+		</node>
+	</node>
+	<node custom_icon_id="0" foreground="" is_bold="False" name="emacs" prog_lang="custom-colors" readonly="False" tags="" unique_id="13">
+		<rich_text></rich_text>
+	</node>
+	<node custom_icon_id="0" foreground="" is_bold="False" name="打补丁" prog_lang="custom-colors" readonly="False" tags="" unique_id="8">
+		<rich_text>git am --reject 0001-.patch
+
+cp /work/pon_detect_main.c linux-3.18.x/drivers/net/ethernet/realtek/rtl86900/sdk/src/app/pon_detect/src/pon_detect_main.c
+
+git add .
+
+git am --resolved
+
+git push</rich_text>
+	</node>
+	<node custom_icon_id="0" foreground="" is_bold="False" name="loopback" prog_lang="custom-colors" readonly="False" tags="" unique_id="2">
+		<rich_text link="webs http://www.bdqn.cn/news/201307/10486.shtml">http://www.bdqn.cn/news/201307/10486.shtml</rich_text>
+		<rich_text>   Linux-网桥原理分析 （三）
+</rich_text>
+		<rich_text link="webs https://blog.csdn.net/zhaihaifei/article/details/40859827">https://blog.csdn.net/zhaihaifei/article/details/40859827</rich_text>
+		<rich_text>    Linux-kernel 网桥代码分析
+
+rtk_loopback_disable_intf
+loop_intf
+
+
+硬件来的报文，走的hook链表，转给各个报文处理协议栈</rich_text>
+	</node>
+	<node custom_icon_id="0" foreground="" is_bold="False" name="led.js" prog_lang="custom-colors" readonly="False" tags="" unique_id="4">
+		<rich_text># $language = &quot;javascript&quot; 
+# $interface = &quot;1.0&quot;
+#
+
+
+// 检查Crt版本，如果低于7.3，则退出Crt。 
+crtVer = crt.Version; 
+if ( crtVer &lt; 7.3 ) { 
+    crt.Quit(); 
+}
+
+//var actTab = crt.GetActiveTab();
+// 获取当前脚本执行的Tab，并获取编号(Index从1开始) 
+var scriptTab = crt.GetScriptTab(); 
+var tabNum = scriptTab.Index; 
+var scrName = crt.ScriptFullName;
+// 在当前Tab上提示数据
+//crt.Dialog.MessageBox(scrName+&quot;TAB exist script excuting is：&quot;+tabNum ); 
+//
+
+//}
+var delay=100
+var cmdstring;
+
+scriptTab.screen.sendkeys(&quot;led init\n&quot;);
+crt.Sleep(delay);
+scriptTab.screen.sendkeys(&quot;led set mode parallel\n&quot;);
+crt.Sleep(delay);
+
+//Led0 led1 与调试uart复用
+//Led3 与reset gpio47复用
+//Led group index 0~16
+
+for (var i = 2;i &lt; 16;i ++ )
+{
+ cmdstring=&quot;led set group &quot; +i+&quot; type none\n&quot;
+ scriptTab.screen.sendkeys(cmdstring);
+ crt.Sleep(delay);
+ cmdstring=&quot;led set group &quot; +i+&quot; source force state enable\n&quot;
+ scriptTab.screen.sendkeys(cmdstring);
+ crt.Sleep(delay);
+ cmdstring=&quot;led set group &quot; +i+&quot; parallel-state enable\n&quot;
+ scriptTab.screen.sendkeys(cmdstring);
+ crt.Sleep(delay);
+ cmdstring=&quot;led set group &quot;+i+ &quot; force blinking\n&quot;
+ scriptTab.screen.sendkeys(cmdstring);
+ crt.Sleep(delay);
+}
+</rich_text>
+	</node>
+	<node custom_icon_id="0" foreground="" is_bold="False" name="shell 命令" prog_lang="custom-colors" readonly="False" tags="" unique_id="14">
+		<rich_text>find . -name .config |xargs grep -nr &quot;CONFIG_RG_RTL9607C_SERIES&quot;</rich_text>
+	</node>
+</cherrytree>
