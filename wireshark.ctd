@@ -12,7 +12,11 @@
 </rich_text>
 	</node>
 	<node custom_icon_id="0" foreground="" is_bold="False" name="学习笔记" prog_lang="custom-colors" readonly="False" tags="" unique_id="15">
-		<rich_text>物理层：
+		<rich_text></rich_text>
+		<node custom_icon_id="0" foreground="" is_bold="False" name="网络" prog_lang="custom-colors" readonly="False" tags="" unique_id="16">
+			<rich_text></rich_text>
+			<node custom_icon_id="0" foreground="" is_bold="False" name="OSI七层模型" prog_lang="custom-colors" readonly="False" tags="" unique_id="18">
+				<rich_text>物理层：
 
 数据链路层：互联设备之间的传送和帧识别
 
@@ -30,6 +34,14 @@
 数据链路层：
 
 网络层：</rich_text>
+			</node>
+			<node custom_icon_id="0" foreground="" is_bold="False" name="三次握手" prog_lang="custom-colors" readonly="False" tags="" unique_id="19">
+				<rich_text></rich_text>
+			</node>
+		</node>
+		<node custom_icon_id="0" foreground="" is_bold="False" name="javascript" prog_lang="custom-colors" readonly="False" tags="" unique_id="17">
+			<rich_text></rich_text>
+		</node>
 	</node>
 	<node custom_icon_id="0" foreground="" is_bold="False" name="GPON" prog_lang="custom-colors" readonly="False" tags="" unique_id="10">
 		<rich_text></rich_text>
@@ -217,6 +229,8 @@ for (var i = 2;i &lt; 16;i ++ )
 </rich_text>
 	</node>
 	<node custom_icon_id="0" foreground="" is_bold="False" name="shell 命令" prog_lang="custom-colors" readonly="False" tags="" unique_id="14">
-		<rich_text>find . -name .config |xargs grep -nr &quot;CONFIG_RG_RTL9607C_SERIES&quot;</rich_text>
+		<rich_text>find . -name .config |xargs grep -nr &quot;CONFIG_RG_RTL9607C_SERIES&quot;    //批量搜索多个字符串字符
+
+find . -name &quot;config_user&quot; | xargs sed -i &quot;s/CONFIG_USER_AES_MAC=y/# CONFIG_USER_AES_MAC is not set/g&quot;   //批量修改多个字符串相同字符</rich_text>
 	</node>
 </cherrytree>
