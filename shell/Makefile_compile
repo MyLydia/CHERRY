@@ -1,0 +1,12 @@
+###########################################
+#make -f Makefile_compile ccc
+###########################################
+ccc:aaa bbb ddd
+
+ddd:
+	cp ./cwmpClient  ./work 
+
+bbb:
+	/rsdk-4.8.5-5281-EB-3.18-u0.9.33-m32ut-170303_lunapro-171213/bin/rsdk-linux-gcc  -Os -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -DUSE_LIBMD5 -I/work/4/sdk/include -I/work/4/sdk/lib/libmd5 -Dlinux -D__linux__ -Dunix -DEMBED -D_USE_RSDK_WRAPPER_ -D_LINUX_3_18_ -include linux/config.h -I/work/4/sdk -include /work/4/sdk/autoconf.h -I/work/4/sdk/linux-3.18.x/drivers/net/ethernet/realtek/rtl86900/sdk/include -I/work/4/sdk/linux-3.18.x/drivers/net/ethernet/realtek/rtl86900/sdk/system/include -I/work/4/sdk/linux-3.18.x/drivers/net/ethernet/realtek/rtl86900/romeDriver -I/work/4/sdk/linux-3.18.x/drivers/net/ethernet/realtek/rtl86900/tr142/include -I/work/4/sdk/linux-3.18.x/drivers/net/ethernet/realtek/rtl86900/sdk/src/app/omci_v1/API -I/work/4/sdk/linux-3.18.x/drivers/net/wireless/rtl8192cd -rdynamic -fexceptions -DWITH_IPV6 -DWITH_CASEINSENSITIVETAGS -I/work/4/sdk/user/cwmp-tr069/cwmpClient/../include -DWITH_COOKIES -c -o prmt_landevice_wlan.o prmt_landevice_wlan.c
+aaa:
+	/rsdk-4.8.5-5281-EB-3.18-u0.9.33-m32ut-170303_lunapro-171213/bin/rsdk-linux-gcc  -Os  -L/work/4/sdk/lib/librtk -L/work/4/sdk/linux-3.18.x/drivers/net/ethernet/realtek/rtl86900/object/src/app/lib -o cwmpClient prmt_igd.o prmt_deviceinfo.o prmt_mngmtserver.o prmt_layer3fw.o prmt_landevice.o prmt_landevice_eth.o prmt_landevice_wlan.o prmt_wancondevice.o prmt_ippingdiag.o prmt_time.o prmt_ddns.o prmt_services.o prmt_userif.o prmt_captiveportal.o prmt_traceroute.o prmt_landevice_usb.o prmt_tr143.o prmt_apply.o porting.o main.o prmt_wandevice.o prmt_lanconfsec.o prmt_nslookup.o cwmpc_utility.o prmt_queuemnt_3.o ../lib/libcwmp.a ../lib/libgsoapck.a udpechoserverlib.o -lmib -pthread -lrtk -lpthread  -lpthread -lrt -lmd5  -lcrypt -lm
