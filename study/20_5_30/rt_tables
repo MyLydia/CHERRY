@@ -1,0 +1,17 @@
+#
+255	local
+254	main
+253	default
+0	unspec
+#
+# local
+#
+#1	inr.ruhep
+202    wan1
+203    wan2
+204    wan3
+205    wan4
+206    wan5
+207    pptp
+197    arpgw
+196    staticroute
